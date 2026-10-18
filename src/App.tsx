@@ -21,10 +21,8 @@ import { OrdemServicoEditor } from './components/OrdemServicoEditor';
 import { PrintOSModal } from './components/PrintOSModal';
 import { SupabaseConfigView } from './components/SupabaseConfigModal';
 import {
-  Eye,
-  FileSpreadsheet,
   Users,
-  Package,
+  ShoppingCart,
   DollarSign,
   Database,
   Plus,
@@ -35,8 +33,18 @@ import {
   LayoutDashboard,
   ShoppingBag,
   Tag,
-  ShieldCheck,
   Trash2,
+  Menu,
+  Bell,
+  Download,
+  ChevronLeft,
+  Building2,
+  HelpCircle,
+  MessageCircle,
+  FileText,
+  Layers,
+  TrendingUp,
+  Box,
 } from 'lucide-react';
 
 type ActiveModule =
@@ -70,14 +78,16 @@ export function App() {
     return saved ? JSON.parse(saved) : INITIAL_FINANCEIRO;
   });
 
+  // Abre direto na tela /movimentacao/ordem-servico/NNqxKG/editar (igual ao link de exemplo!)
   const [activeModule, setActiveModule] = useState<ActiveModule>('os_editor');
   const [selectedOSId, setSelectedOSId] = useState<string>('os-1');
   const [printingOS, setPrintingOS] = useState<OrdemServico | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('Todos');
   const [supabaseConnected, setSupabaseConnected] = useState(getSupabaseConfig().isConfigured);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  // Estado PDV (Venda Rápida de Balcão)
+  // Estado PDV (Vendas)
   const [pdvCart, setPdvCart] = useState<{ produto: Produto; qtd: number }[]>([]);
   const [pdvClienteNome, setPdvClienteNome] = useState('Consumidor Balcão');
   const [pdvFormaPagto, setPdvFormaPagto] = useState('PIX à Vista');
@@ -133,7 +143,25 @@ export function App() {
     localStorage.setItem('sos_otica_financeiro_v2', JSON.stringify(financeiro));
   }, [financeiro]);
 
-  // Mantém a URL limpa na raiz para evitar caminhos longos na Vercel
+  // Suporta a rota /movimentacao/ordem-servico/NNqxKG/editar na URL (com base: '/' funcionando 100%)
+  useEffect(() => {
+    try {
+      if (window.location.protocol.startsWith('http')) {
+        const currentOS = ordens.find((o) => o.id === selectedOSId);
+        if (activeModule === 'os_editor' && currentOS) {
+          window.history.replaceState(
+            null,
+            '',
+            `/movimentacao/ordem-servico/${currentOS.codigo_os}/editar`
+          );
+        } else if (activeModule === 'os_list') {
+          window.history.replaceState(null, '', `/movimentacao/ordem-servico`);
+        }
+      }
+    } catch {
+      // Ignora em modo file://
+    }
+  }, [activeModule, selectedOSId, ordens]);
 
   const fetchFromSupabase = async () => {
     const client = getSupabaseClient();
@@ -154,7 +182,7 @@ export function App() {
       const { data: finData } = await client.from('financeiro').select('*');
       if (finData && finData.length > 0) setFinanceiro(finData as LancamentoFinanceiro[]);
     } catch {
-      // Mantém dados locais caso tabela ainda não exista
+      // Mantém dados locais
     }
   };
 
@@ -230,8 +258,8 @@ export function App() {
       cliente_telefone: '',
       cliente_cpf: '',
       status: 'Aberta',
-      vendedor: 'Consultor Óptico',
-      tecnico_optico: 'Carlos Eduardo (Téc. Óptico)',
+      vendedor: 'Guilherme Alcantara',
+      tecnico_optico: 'Mara / Carlos Eduardo',
       data_abertura: today,
       data_previsao: futureDate,
       hora_previsao: '17:00',
@@ -263,12 +291,12 @@ export function App() {
       perto_oe_cil: '',
       perto_oe_eixo: '',
       perto_oe_dnp: '',
-      distancia_vertice: '12 mm',
-      angulo_pantoscopico: '8°',
-      angulo_curvatura: '5°',
-      diametro_lente: '70 mm',
+      distancia_vertice: '12',
+      angulo_pantoscopico: '8',
+      angulo_curvatura: '5',
+      diametro_lente: '70',
       lente_tipo: 'Visão Simples',
-      lente_material: 'Resina 1.56',
+      lente_material: 'Resina',
       lente_descricao: '',
       lente_tratamentos: ['Antirreflexo Premium', 'Filtro Luz Azul (Blue UV)'],
       lente_origem: 'Encomenda Surfaçagem',
@@ -431,7 +459,6 @@ export function App() {
     setShowNewProdModal(false);
   };
 
-  // Finalizar venda rápida no PDV
   const handleFinalizarPDV = () => {
     if (pdvCart.length === 0) return;
     const subtotal = pdvCart.reduce((acc, item) => acc + item.produto.preco_venda * item.qtd, 0);
@@ -453,7 +480,6 @@ export function App() {
       ...financeiro,
     ]);
 
-    // Baixar estoque
     setProdutos((prev) =>
       prev.map((p) => {
         const inCart = pdvCart.find((c) => c.produto.id === p.id);
@@ -481,25 +507,6 @@ export function App() {
     return matchStatus && matchSearch;
   });
 
-  const getStatusBadge = (status: StatusOS) => {
-    switch (status) {
-      case 'Pronta na Gaveta':
-        return 'bg-emerald-100 text-emerald-800 border-emerald-300';
-      case 'Em Montagem':
-      case 'Conferência / Lensômetro':
-        return 'bg-blue-100 text-blue-800 border-blue-300';
-      case 'No Laboratório':
-      case 'Aguardando Lentes':
-        return 'bg-amber-100 text-amber-800 border-amber-300';
-      case 'Entregue ao Cliente':
-        return 'bg-slate-200 text-slate-700 border-slate-300';
-      case 'Cancelada':
-        return 'bg-red-100 text-red-700 border-red-300';
-      default:
-        return 'bg-indigo-100 text-indigo-800 border-indigo-300';
-    }
-  };
-
   const totalFaturado = ordens
     .filter((o) => o.status !== 'Cancelada')
     .reduce((acc, o) => acc + Number(o.valor_total || 0), 0);
@@ -508,1001 +515,838 @@ export function App() {
     .reduce((acc, o) => acc + Number(o.valor_restante || 0), 0);
 
   return (
-    <div className="min-h-screen flex bg-slate-100 text-slate-900">
-      {/* SIDEBAR LATERAL (ESTILO SSOTICA PRIME) */}
-      <aside className="w-64 bg-slate-900 text-slate-200 flex flex-col shrink-0 border-r border-slate-800">
-        <div className="p-5 border-b border-slate-800 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-600/30">
-            <Eye className="w-6 h-6" />
-          </div>
-          <div>
-            <span className="font-black text-base text-white tracking-tight block leading-none">
-              SOS ÓTICAS PRIME
-            </span>
-            <span className="text-[11px] text-blue-400 font-semibold">
-              Sistema de Gestão Óptica
-            </span>
-          </div>
-        </div>
-
-        {/* Botão Destaque Nova O.S. */}
-        <div className="p-4">
-          <button
-            onClick={handleCreateNewOS}
-            className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white py-2.5 px-4 rounded-xl text-xs font-bold shadow-lg shadow-blue-600/25 transition cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            Nova Ordem de Serviço
-          </button>
-        </div>
-
-        {/* Menu de Navegação */}
-        <nav className="flex-1 px-3 space-y-1 text-xs font-semibold">
-          <div className="px-3 py-1.5 text-[10px] font-bold uppercase text-slate-500 tracking-wider">
-            Movimentação & O.S.
-          </div>
-
-          <button
-            onClick={() => {
-              const nn = ordens.find((o) => o.codigo_os === 'NNqxKG') || ordens[0];
-              if (nn) setSelectedOSId(nn.id);
-              setActiveModule('os_editor');
-            }}
-            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition cursor-pointer ${
-              activeModule === 'os_editor'
-                ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
-                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <span className="flex items-center gap-2.5">
-              <Edit3 className="w-4 h-4" />
-              O.S. #{currentEditingOS?.numero_os} ({currentEditingOS?.codigo_os})
-            </span>
-            <span className="text-[10px] font-mono bg-blue-600 text-white px-1.5 py-0.5 rounded">
-              Editar
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveModule('os_list')}
-            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition cursor-pointer ${
-              activeModule === 'os_list'
-                ? 'bg-slate-800 text-white'
-                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <span className="flex items-center gap-2.5">
-              <FileSpreadsheet className="w-4 h-4" />
-              Ordens de Serviço
-            </span>
-            <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full text-[10px]">
-              {ordens.length}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveModule('pdv')}
-            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition cursor-pointer ${
-              activeModule === 'pdv'
-                ? 'bg-slate-800 text-white'
-                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <span className="flex items-center gap-2.5">
-              <ShoppingBag className="w-4 h-4" />
-              PDV / Venda Balcão
-            </span>
-            <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded">
-              Rápido
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveModule('dashboard')}
-            className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl transition cursor-pointer ${
-              activeModule === 'dashboard'
-                ? 'bg-slate-800 text-white'
-                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <LayoutDashboard className="w-4 h-4" />
-            Painel Gerencial
-          </button>
-
-          <div className="pt-4 px-3 py-1.5 text-[10px] font-bold uppercase text-slate-500 tracking-wider">
-            Cadastros & Estoque
-          </div>
-
-          <button
-            onClick={() => setActiveModule('clientes')}
-            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition cursor-pointer ${
-              activeModule === 'clientes'
-                ? 'bg-slate-800 text-white'
-                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <span className="flex items-center gap-2.5">
-              <Users className="w-4 h-4" />
-              Clientes & Receituário
-            </span>
-            <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full text-[10px]">
-              {clientes.length}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveModule('estoque')}
-            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition cursor-pointer ${
-              activeModule === 'estoque'
-                ? 'bg-slate-800 text-white'
-                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <span className="flex items-center gap-2.5">
-              <Package className="w-4 h-4" />
-              Armações, Lentes & Etiquetas
-            </span>
-            <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full text-[10px]">
-              {produtos.length}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveModule('financeiro')}
-            className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl transition cursor-pointer ${
-              activeModule === 'financeiro'
-                ? 'bg-slate-800 text-white'
-                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <DollarSign className="w-4 h-4" />
-            Caixa, Contas & Crediário
-          </button>
-
-          <div className="pt-4 px-3 py-1.5 text-[10px] font-bold uppercase text-slate-500 tracking-wider">
-            Infraestrutura
-          </div>
-
-          <button
-            onClick={() => setActiveModule('supabase')}
-            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition cursor-pointer ${
-              activeModule === 'supabase'
-                ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/30'
-                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <span className="flex items-center gap-2.5">
-              <Database className="w-4 h-4 text-emerald-400" />
-              Banco Supabase
-            </span>
-            <span
-              className={`w-2 h-2 rounded-full ${
-                supabaseConnected ? 'bg-emerald-400' : 'bg-amber-400'
-              }`}
-            />
-          </button>
-        </nav>
-
-        <div className="p-4 border-t border-slate-800 text-[11px] text-slate-400">
-          <div className="flex items-center justify-between mb-1">
-            <span className="font-bold text-white">SOS Óticas Prime</span>
-            <span className="text-emerald-400 font-semibold">● Ativo</span>
-          </div>
-          <p className="text-[10px] text-slate-500">React + TypeScript + Supabase</p>
-        </div>
-      </aside>
-
-      {/* CONTEÚDO PRINCIPAL */}
-      <main className="flex-1 overflow-y-auto p-6">
-        {/* 1. EDITOR DE ORDEM DE SERVIÇO (PADRÃO SSOTICA) */}
-        {activeModule === 'os_editor' && currentEditingOS && (
-          <OrdemServicoEditor
-            os={currentEditingOS}
-            clientes={clientes}
-            produtos={produtos}
-            onSave={handleSaveOS}
-            onBack={() => setActiveModule('os_list')}
-            onPrint={(osToPrint) => setPrintingOS(osToPrint)}
-          />
-        )}
-
-        {/* 2. LISTAGEM DE ORDENS DE SERVIÇO */}
-        {activeModule === 'os_list' && (
-          <div className="space-y-5">
-            <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-              <div>
-                <h1 className="text-xl font-bold text-slate-900">
-                  Movimentação • Ordens de Serviço (O.S.)
-                </h1>
-                <p className="text-xs text-slate-500">
-                  Controle de laboratório, gavetas/bandejas, conferência de lensômetro e entregas
-                </p>
-              </div>
-              <button
-                onClick={handleCreateNewOS}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-md transition cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                Abrir Nova Ordem de Serviço
-              </button>
-            </div>
-
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3">
-              <div className="relative flex-1 min-w-[260px]">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-2.5" />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Buscar por Nº O.S., Código (ex: NNqxKG), Nome do Cliente ou CPF..."
-                  className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:border-blue-600"
-                />
-              </div>
-
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {[
-                  'Todos',
-                  'Aberta',
-                  'No Laboratório',
-                  'Em Montagem',
-                  'Pronta na Gaveta',
-                  'Entregue ao Cliente',
-                ].map((st) => (
-                  <button
-                    key={st}
-                    onClick={() => setStatusFilter(st)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-                      statusFilter === st
-                        ? 'bg-slate-900 text-white'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
+    <div className="min-h-screen flex bg-[#f3f3f4] text-[#676a6c]">
+      {/* =====================================================================
+          MENU LATERAL ESQUERDO IDÊNTICO AO SSOTICA (#2f4050)
+         ===================================================================== */}
+      {sidebarOpen && (
+        <aside className="w-[220px] bg-[#2f4050] text-[#a7b1c2] flex flex-col shrink-0 select-none relative">
+          {/* Caixa Branca de Logo no Topo (Igual ao print os_tecnologia.png) */}
+          <div className="p-3 bg-[#263949]">
+            <div className="bg-white rounded py-3 px-4 flex flex-col items-center justify-center shadow-sm">
+              <div className="flex items-center gap-1">
+                <span className="text-xl font-light tracking-tight text-[#2f4050]">ss</span>
+                <span className="relative text-xl font-bold text-[#0E9AEF]">
+                  ó
+                  <svg
+                    className="w-5 h-3 text-[#0E9AEF] -mt-2 mx-auto"
+                    viewBox="0 0 24 12"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
                   >
-                    {st}
-                  </button>
-                ))}
+                    <circle cx="6" cy="6" r="4" />
+                    <circle cx="18" cy="6" r="4" />
+                    <path d="M10 6h4" />
+                  </svg>
+                </span>
+                <span className="text-xl font-light tracking-tight text-[#2f4050]">tica</span>
               </div>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase text-slate-500">
-                    <th className="py-3.5 px-4">Nº O.S. / Código</th>
-                    <th className="py-3.5 px-4">Cliente</th>
-                    <th className="py-3.5 px-4">Lentes & Armação</th>
-                    <th className="py-3.5 px-4">Gaveta / Lab</th>
-                    <th className="py-3.5 px-4">Entrega Prometida</th>
-                    <th className="py-3.5 px-4">Situação</th>
-                    <th className="py-3.5 px-4 text-right">Total / Saldo</th>
-                    <th className="py-3.5 px-4 text-center">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {filteredOrdens.map((os) => (
-                    <tr key={os.id} className="hover:bg-slate-50/90 transition">
-                      <td className="py-3.5 px-4">
-                        <span className="font-black text-slate-900 text-sm block">
-                          #{os.numero_os}
-                        </span>
-                        <span className="font-mono text-[11px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-200">
-                          {os.codigo_os}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <strong className="text-slate-900 block text-xs">{os.cliente_nome}</strong>
-                        <span className="text-slate-500">{os.cliente_telefone}</span>
-                      </td>
-                      <td className="py-3.5 px-4 max-w-xs">
-                        <p className="font-semibold text-slate-800 truncate">{os.lente_descricao}</p>
-                        <p className="text-slate-500 truncate">
-                          Arm: {os.armacao_descricao} ({os.armacao_procedencia})
-                        </p>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <span className="font-bold text-amber-800 block">
-                          {os.bandeja_gaveta || 'Gaveta 01'}
-                        </span>
-                        <span className="text-[11px] text-slate-500">
-                          {os.laboratorio_nome} ({os.laboratorio_pedido})
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 font-semibold text-slate-800">
-                        {os.data_previsao}
-                        <span className="block text-[11px] text-slate-500 font-normal">
-                          às {os.hora_previsao}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <span
-                          className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-bold border ${getStatusBadge(
-                            os.status
-                          )}`}
-                        >
-                          {os.status}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 text-right">
-                        <strong className="text-slate-900 block">
-                          R$ {Number(os.valor_total).toFixed(2)}
-                        </strong>
-                        <span
-                          className={`text-[11px] font-bold ${
-                            os.valor_restante > 0 ? 'text-red-600' : 'text-emerald-600'
-                          }`}
-                        >
-                          {os.valor_restante > 0
-                            ? `Falta R$ ${Number(os.valor_restante).toFixed(2)}`
-                            : 'Quitado'}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
-                          <button
-                            onClick={() => {
-                              setSelectedOSId(os.id);
-                              setActiveModule('os_editor');
-                            }}
-                            className="flex items-center gap-1 bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                            Editar O.S.
-                          </button>
-                          <button
-                            onClick={() => setPrintingOS(os)}
-                            className="p-1.5 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 cursor-pointer"
-                            title="Imprimir O.S."
-                          >
-                            <Printer className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <span className="text-[9px] uppercase font-bold tracking-widest text-[#1ab394] -mt-1">
+                SOS Óticas Prime
+              </span>
             </div>
           </div>
-        )}
 
-        {/* 3. FRENTE DE CAIXA / PDV VENDA RÁPIDA DE BALCÃO */}
-        {activeModule === 'pdv' && (
-          <div className="space-y-5">
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-              <div>
-                <h1 className="text-xl font-bold text-slate-900">
-                  PDV • Frente de Caixa & Venda Direta de Balcão
-                </h1>
-                <p className="text-xs text-slate-500">
-                  Venda rápida de Óculos de Sol, Armações avulsas, Lentes de Contato e Acessórios com baixa de estoque
-                </p>
+          {/* Itens do Menu Lateral (Idênticos aos prints oficiais do ssOtica) */}
+          <nav className="flex-1 py-2 text-[13px] font-medium space-y-0.5 overflow-y-auto">
+            <button
+              onClick={() => setActiveModule('dashboard')}
+              className={`w-full flex items-center gap-3 px-5 py-2.5 transition cursor-pointer ${
+                activeModule === 'dashboard'
+                  ? 'bg-[#293846] text-white border-l-4 border-[#19aa8d]'
+                  : 'hover:bg-[#293846] hover:text-white'
+              }`}
+            >
+              <LayoutDashboard className="w-4 h-4" />
+              <span>Painel de Informações</span>
+            </button>
+
+            <button
+              onClick={() => setActiveModule('clientes')}
+              className={`w-full flex items-center gap-3 px-5 py-2.5 transition cursor-pointer ${
+                activeModule === 'clientes'
+                  ? 'bg-[#293846] text-white border-l-4 border-[#19aa8d]'
+                  : 'hover:bg-[#293846] hover:text-white'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              <span>Clientes</span>
+            </button>
+
+            <button
+              onClick={() => setActiveModule('estoque')}
+              className={`w-full flex items-center gap-3 px-5 py-2.5 transition cursor-pointer ${
+                activeModule === 'estoque'
+                  ? 'bg-[#293846] text-white border-l-4 border-[#19aa8d]'
+                  : 'hover:bg-[#293846] hover:text-white'
+              }`}
+            >
+              <ShoppingCart className="w-4 h-4" />
+              <span>Produtos</span>
+            </button>
+
+            <button
+              onClick={() => setActiveModule('estoque')}
+              className="w-full flex items-center justify-between px-5 py-2.5 hover:bg-[#293846] hover:text-white transition cursor-pointer"
+            >
+              <span className="flex items-center gap-3">
+                <Download className="w-4 h-4" />
+                <span>Tabelas de Lentes</span>
+              </span>
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+
+            {/* ITEM ATIVO: ORDENS DE SERVIÇO */}
+            <button
+              onClick={() => setActiveModule('os_editor')}
+              className={`w-full flex items-center justify-between px-5 py-2.5 transition cursor-pointer ${
+                activeModule === 'os_editor' || activeModule === 'os_list'
+                  ? 'bg-[#293846] text-white border-l-4 border-[#19aa8d] font-semibold'
+                  : 'hover:bg-[#293846] hover:text-white'
+              }`}
+            >
+              <span className="flex items-center gap-3">
+                <svg
+                  className="w-4 h-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <circle cx="6" cy="14" r="4" />
+                  <circle cx="18" cy="14" r="4" />
+                  <path d="M10 14h4" />
+                </svg>
+                <span>Ordens de Serviço</span>
+              </span>
+            </button>
+
+            {/* Sub-itens rápidos de Ordem de Serviço */}
+            {(activeModule === 'os_editor' || activeModule === 'os_list') && (
+              <div className="bg-[#23313f] py-1 pl-11 pr-3 space-y-1 text-xs">
+                <button
+                  onClick={() => setActiveModule('os_editor')}
+                  className={`block w-full text-left py-1.5 px-2 rounded cursor-pointer ${
+                    activeModule === 'os_editor'
+                      ? 'text-white font-bold bg-[#1ab394]/20'
+                      : 'text-[#a7b1c2] hover:text-white'
+                  }`}
+                >
+                  • Editar O.S. ({currentEditingOS?.codigo_os})
+                </button>
+                <button
+                  onClick={() => setActiveModule('os_list')}
+                  className={`block w-full text-left py-1.5 px-2 rounded cursor-pointer ${
+                    activeModule === 'os_list'
+                      ? 'text-white font-bold bg-[#1ab394]/20'
+                      : 'text-[#a7b1c2] hover:text-white'
+                  }`}
+                >
+                  • Consultar Todas ({ordens.length})
+                </button>
+                <button
+                  onClick={handleCreateNewOS}
+                  className="block w-full text-left py-1.5 px-2 rounded text-[#1ab394] hover:text-white font-bold cursor-pointer"
+                >
+                  + Nova O.S.
+                </button>
               </div>
-              {pdvSuccess && (
-                <div className="flex items-center gap-2 bg-emerald-100 text-emerald-800 border border-emerald-300 px-4 py-2 rounded-xl text-xs font-bold">
-                  <CheckCircle2 className="w-4 h-4" />
-                  Venda finalizada e lançada no Caixa!
-                </div>
-              )}
+            )}
+
+            <button
+              onClick={() => setActiveModule('pdv')}
+              className={`w-full flex items-center gap-3 px-5 py-2.5 transition cursor-pointer ${
+                activeModule === 'pdv'
+                  ? 'bg-[#293846] text-white border-l-4 border-[#19aa8d]'
+                  : 'hover:bg-[#293846] hover:text-white'
+              }`}
+            >
+              <ShoppingBag className="w-4 h-4" />
+              <span>Vendas</span>
+            </button>
+
+            <button
+              onClick={() => setActiveModule('os_list')}
+              className="w-full flex items-center gap-3 px-5 py-2.5 hover:bg-[#293846] hover:text-white transition cursor-pointer"
+            >
+              <Tag className="w-4 h-4" />
+              <span>Etapas O.S.</span>
+            </button>
+
+            <button
+              onClick={() => setActiveModule('financeiro')}
+              className={`w-full flex items-center justify-between px-5 py-2.5 transition cursor-pointer ${
+                activeModule === 'financeiro'
+                  ? 'bg-[#293846] text-white border-l-4 border-[#19aa8d]'
+                  : 'hover:bg-[#293846] hover:text-white'
+              }`}
+            >
+              <span className="flex items-center gap-3">
+                <DollarSign className="w-4 h-4" />
+                <span>Financeiro</span>
+              </span>
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              onClick={() => setActiveModule('estoque')}
+              className="w-full flex items-center justify-between px-5 py-2.5 hover:bg-[#293846] hover:text-white transition cursor-pointer"
+            >
+              <span className="flex items-center gap-3">
+                <Box className="w-4 h-4" />
+                <span>Estoque</span>
+              </span>
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              onClick={() => setActiveModule('supabase')}
+              className={`w-full flex items-center justify-between px-5 py-2.5 transition cursor-pointer ${
+                activeModule === 'supabase'
+                  ? 'bg-[#293846] text-white border-l-4 border-[#19aa8d]'
+                  : 'hover:bg-[#293846] hover:text-white'
+              }`}
+            >
+              <span className="flex items-center gap-3">
+                <Database className="w-4 h-4 text-[#1ab394]" />
+                <span>Banco Supabase</span>
+              </span>
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  supabaseConnected ? 'bg-[#1ab394]' : 'bg-amber-400'
+                }`}
+              />
+            </button>
+          </nav>
+
+          {/* Botão Azul Redondo "Atendimento / Chat" no Rodapé Esquerdo (Igual ao print!) */}
+          <div className="p-3">
+            <button
+              type="button"
+              onClick={() => setActiveModule('supabase')}
+              className="w-full bg-[#0E9AEF] hover:bg-[#0c87d1] text-white rounded-full py-2 px-4 flex items-center justify-center gap-2 text-xs font-semibold shadow-md cursor-pointer"
+            >
+              <MessageCircle className="w-4 h-4" />
+              <span>Atendimento</span>
+            </button>
+          </div>
+        </aside>
+      )}
+
+      {/* =====================================================================
+          COLUNA DIREITA: TOP BAR BRANCA SSOTICA + ÁREA DE CONTEÚDO
+         ===================================================================== */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top Navbar Branca Padrão ssOtica */}
+        <header className="h-14 bg-white border-b border-[#e7eaec] px-5 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-1.5 rounded hover:bg-[#f3f3f4] text-[#676a6c] cursor-pointer"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <div className="flex items-center gap-1 select-none">
+              <span className="text-lg font-light text-[#2f4050]">ss</span>
+              <span className="text-lg font-bold text-[#0E9AEF]">ó</span>
+              <span className="text-lg font-light text-[#2f4050]">tica</span>
+              <span className="ml-2 text-xs bg-[#f3f3f4] text-[#676a6c] px-2 py-0.5 rounded font-semibold">
+                SOS Óticas Prime
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={handleCreateNewOS}
+              className="flex items-center gap-1.5 border border-[#e5e6e7] rounded px-3 py-1.5 text-xs font-semibold text-[#676a6c] hover:bg-[#f3f3f4] cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5 text-[#1ab394]" />
+              + Nova O.S.
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveModule('supabase')}
+              className="hidden sm:flex items-center gap-1.5 border border-[#e5e6e7] rounded px-3 py-1.5 text-xs text-[#676a6c] hover:bg-[#f3f3f4] cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Baixar Suporte Remoto
+            </button>
+
+            <div className="relative cursor-pointer">
+              <Bell className="w-5 h-5 text-[#ef5350]" />
+              <span className="absolute -top-1.5 -right-1.5 bg-[#f8ac59] text-white text-[10px] font-bold px-1 rounded">
+                {ordens.length}
+              </span>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-              {/* Catálogo de Produtos no PDV */}
-              <div className="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                <h3 className="font-bold text-sm text-slate-800">
-                  Clique nos produtos abaixo para adicionar à cesta de venda:
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {produtos.map((prod) => (
-                    <div
-                      key={prod.id}
-                      onClick={() => {
-                        setPdvCart((prev) => {
-                          const existing = prev.find((i) => i.produto.id === prod.id);
-                          if (existing) {
-                            return prev.map((i) =>
-                              i.produto.id === prod.id ? { ...i, qtd: i.qtd + 1 } : i
-                            );
-                          }
-                          return [...prev, { produto: prod, qtd: 1 }];
-                        });
-                      }}
-                      className="p-3.5 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/30 transition cursor-pointer flex items-center justify-between"
-                    >
-                      <div>
-                        <span className="text-[10px] font-mono bg-slate-100 px-2 py-0.5 rounded font-bold text-slate-700">
-                          {prod.codigo} • {prod.categoria}
-                        </span>
-                        <p className="font-bold text-xs text-slate-900 mt-1">{prod.nome}</p>
-                        <p className="text-[11px] text-slate-500">
-                          Estoque: {prod.estoque} un
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-sm font-black text-blue-700 block">
-                          R$ {prod.preco_venda.toFixed(2)}
-                        </span>
-                        <span className="text-[10px] text-blue-600 font-bold">+ Adicionar</span>
-                      </div>
-                    </div>
-                  ))}
+            <div className="w-8 h-8 rounded-full bg-[#2f4050] text-white flex items-center justify-center text-xs font-bold">
+              GA
+            </div>
+          </div>
+        </header>
+
+        {/* Área Principal */}
+        <main className="flex-1 overflow-y-auto p-6">
+          {/* 1. EDITOR DE ORDEM DE SERVIÇO (PADRÃO SSOTICA) */}
+          {activeModule === 'os_editor' && currentEditingOS && (
+            <OrdemServicoEditor
+              os={currentEditingOS}
+              clientes={clientes}
+              produtos={produtos}
+              onSave={handleSaveOS}
+              onBack={() => setActiveModule('os_list')}
+              onPrint={(osToPrint) => setPrintingOS(osToPrint)}
+              onOpenNewProductModal={() => {
+                setActiveModule('estoque');
+                setShowNewProdModal(true);
+              }}
+              onOpenNewClientModal={() => {
+                setActiveModule('clientes');
+                setShowNewClientModal(true);
+              }}
+            />
+          )}
+
+          {/* 2. TELA DE BUSCA E LISTAGEM DE ORDENS DE SERVIÇO (IDÊNTICA A ss2.png!) */}
+          {activeModule === 'os_list' && (
+            <div className="space-y-5">
+              <div className="bg-white border-b border-[#e7eaec] -mx-6 -mt-6 px-6 py-4 mb-5 flex items-center justify-between">
+                <div className="flex items-center gap-2.5 text-[#676a6c]">
+                  <svg
+                    className="w-7 h-7"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.75"
+                  >
+                    <circle cx="6" cy="14" r="4" />
+                    <circle cx="18" cy="14" r="4" />
+                    <path d="M10 14h4" />
+                  </svg>
+                  <h1 className="text-2xl font-light">Ordens de Serviço</h1>
                 </div>
+
+                <button
+                  onClick={handleCreateNewOS}
+                  className="flex items-center gap-1.5 bg-[#1ab394] hover:bg-[#18a689] text-white px-4 py-2 rounded text-xs font-bold cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  Nova O.S.
+                </button>
               </div>
 
-              {/* Resumo do Cupom / Fechamento PDV */}
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-4">
-                <div className="space-y-4">
-                  <h3 className="font-bold text-sm text-slate-900 border-b border-slate-200 pb-2">
-                    Cupom de Venda • SOS Óticas Prime
-                  </h3>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Cliente
-                    </label>
-                    <input
-                      type="text"
-                      value={pdvClienteNome}
-                      onChange={(e) => setPdvClienteNome(e.target.value)}
-                      className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold"
-                    />
-                  </div>
-
-                  <div className="space-y-2 max-h-56 overflow-y-auto">
-                    {pdvCart.length === 0 ? (
-                      <p className="text-xs text-slate-400 text-center py-6">
-                        Nenhum item adicionado ao cupom.
-                      </p>
-                    ) : (
-                      pdvCart.map((item) => (
-                        <div
-                          key={item.produto.id}
-                          className="flex items-center justify-between bg-slate-50 p-2.5 rounded-xl text-xs"
-                        >
-                          <div>
-                            <p className="font-bold text-slate-800">{item.produto.nome}</p>
-                            <span className="text-[11px] text-slate-500">
-                              {item.qtd}x R$ {item.produto.preco_venda.toFixed(2)}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <strong>R$ {(item.qtd * item.produto.preco_venda).toFixed(2)}</strong>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setPdvCart((prev) =>
-                                  prev.filter((i) => i.produto.id !== item.produto.id)
-                                )
-                              }
-                              className="text-red-500 hover:text-red-700 p-1 cursor-pointer"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-3 border-t border-slate-200 pt-3">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                        Desconto (R$)
-                      </label>
-                      <input
-                        type="number"
-                        value={pdvDesconto}
-                        onChange={(e) => setPdvDesconto(parseFloat(e.target.value) || 0)}
-                        className="w-full rounded-xl border border-slate-300 px-3 py-1.5 text-xs font-bold"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                        Forma de Pagamento
-                      </label>
-                      <select
-                        value={pdvFormaPagto}
-                        onChange={(e) => setPdvFormaPagto(e.target.value)}
-                        className="w-full rounded-xl border border-slate-300 px-2.5 py-1.5 text-xs font-bold"
-                      >
-                        <option value="PIX à Vista">PIX à Vista</option>
-                        <option value="Cartão de Crédito">Cartão de Crédito</option>
-                        <option value="Cartão de Débito">Cartão de Débito</option>
-                        <option value="Dinheiro">Dinheiro</option>
+              {/* Card de Filtros Padronizado ssOtica (Idêntico ao print ss2.png) */}
+              <div className="bg-white border border-[#e7eaec] rounded p-5 space-y-4 text-xs">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                  <div className="md:col-span-3">
+                    <label className="block font-bold text-[#676a6c] mb-1">Empresa</label>
+                    <div className="flex items-center border border-[#e5e6e7] rounded px-2.5 py-1.5">
+                      <Building2 className="w-3.5 h-3.5 text-[#888] mr-2" />
+                      <select className="w-full bg-transparent text-xs focus:outline-none">
+                        <option>SOS Óticas Prime</option>
                       </select>
                     </div>
                   </div>
 
-                  <div className="bg-slate-900 text-white p-3.5 rounded-xl flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase text-slate-400">Total PDV</span>
-                    <span className="text-lg font-black text-emerald-400">
-                      R${' '}
-                      {Math.max(
-                        0,
-                        pdvCart.reduce((a, b) => a + b.produto.preco_venda * b.qtd, 0) - pdvDesconto
-                      ).toFixed(2)}
-                    </span>
+                  <div className="md:col-span-3">
+                    <label className="block font-bold text-[#676a6c] mb-1">Tipo O.S.</label>
+                    <select className="w-full border border-[#e5e6e7] rounded px-2.5 py-1.5 bg-white">
+                      <option>Todos (Ótica / Conserto)</option>
+                      <option>Ótica (Laboratório)</option>
+                      <option>Serviço (Conserto)</option>
+                    </select>
                   </div>
 
+                  <div className="md:col-span-6">
+                    <label className="block font-bold text-[#676a6c] mb-1">Nº O.S. / Código</label>
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="Digite o Nº (ex: 1042) ou Código (ex: NNqxKG)..."
+                      className="w-full border border-[#e5e6e7] rounded px-3 py-1.5 focus:outline-none focus:border-[#1ab394]"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                  <div className="md:col-span-6">
+                    <label className="block font-bold text-[#676a6c] mb-1">Busca</label>
+                    <div className="flex items-center border border-[#e5e6e7] rounded px-2.5 py-1.5">
+                      <Search className="w-3.5 h-3.5 text-[#888] mr-2" />
+                      <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Busque por nome do cliente, CPF, cód. autorização..."
+                        className="w-full text-xs focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="md:col-span-3">
+                    <label className="block font-bold text-[#676a6c] mb-1">Etapa O.S.</label>
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="w-full border border-[#e5e6e7] rounded px-2.5 py-1.5 bg-white"
+                    >
+                      <option value="Todos">Todas as Etapas</option>
+                      <option value="Aberta">Aberta</option>
+                      <option value="No Laboratório">No Laboratório</option>
+                      <option value="Em Montagem">Em Montagem</option>
+                      <option value="Pronta na Gaveta">Pronta na Gaveta</option>
+                      <option value="Entregue ao Cliente">Entregue ao Cliente</option>
+                    </select>
+                  </div>
+
+                  <div className="md:col-span-3 flex justify-end">
+                    <button
+                      type="button"
+                      className="bg-[#0E9AEF] hover:bg-[#0c87d1] text-white px-5 py-2 rounded text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Search className="w-3.5 h-3.5" />
+                      Buscar
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tabela de Resultados */}
+              <div className="bg-white border border-[#e7eaec] rounded overflow-hidden">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-[#f5f5f6] border-b border-[#e7eaec] font-bold text-[#676a6c]">
+                      <th className="py-3 px-4">Nº O.S. / Cód</th>
+                      <th className="py-3 px-4">Cliente</th>
+                      <th className="py-3 px-4">Lente & Armação</th>
+                      <th className="py-3 px-4">Gaveta / Lab</th>
+                      <th className="py-3 px-4">Previsão Entrega</th>
+                      <th className="py-3 px-4">Etapa</th>
+                      <th className="py-3 px-4 text-right">Valor Total</th>
+                      <th className="py-3 px-4 text-center">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#e7eaec]">
+                    {filteredOrdens.map((os) => (
+                      <tr key={os.id} className="hover:bg-[#f9f9f9]">
+                        <td className="py-3 px-4">
+                          <strong className="text-[#2f4050] block">#{os.numero_os}</strong>
+                          <span className="font-mono text-[11px] text-[#0E9AEF] font-semibold">
+                            {os.codigo_os}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <strong className="block">{os.cliente_nome}</strong>
+                          <span className="text-[#888]">{os.cliente_telefone}</span>
+                        </td>
+                        <td className="py-3 px-4 max-w-xs">
+                          <p className="truncate font-semibold">{os.lente_descricao}</p>
+                          <p className="truncate text-[#888]">{os.armacao_descricao}</p>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="block font-semibold">{os.bandeja_gaveta}</span>
+                          <span className="text-[#888]">{os.laboratorio_nome}</span>
+                        </td>
+                        <td className="py-3 px-4">
+                          {os.data_previsao} às {os.hora_previsao}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="px-2 py-0.5 rounded bg-[#e7f4fd] text-[#0E9AEF] font-semibold">
+                            {os.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-right font-bold">
+                          R$ {os.valor_total.toFixed(2)}
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              onClick={() => {
+                                setSelectedOSId(os.id);
+                                setActiveModule('os_editor');
+                              }}
+                              className="bg-[#1ab394] hover:bg-[#18a689] text-white px-3 py-1 rounded text-xs font-semibold cursor-pointer"
+                            >
+                              Editar
+                            </button>
+                            <button
+                              onClick={() => setPrintingOS(os)}
+                              className="p-1 rounded border border-[#e5e6e7] hover:bg-[#f3f3f4] cursor-pointer"
+                            >
+                              <Printer className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* 3. VENDAS / PDV */}
+          {activeModule === 'pdv' && (
+            <div className="space-y-5">
+              <div className="bg-white border border-[#e7eaec] rounded p-5 flex items-center justify-between">
+                <div>
+                  <h1 className="text-lg font-semibold text-[#676a6c]">
+                    Vendas • Frente de Caixa
+                  </h1>
+                  <p className="text-xs text-[#888]">
+                    Venda direta de armações, óculos solares e acessórios
+                  </p>
+                </div>
+                {pdvSuccess && (
+                  <span className="bg-[#dff0d8] text-[#3c763d] px-3 py-1.5 rounded text-xs font-bold">
+                    Venda registrada no Caixa com sucesso!
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                <div className="lg:col-span-2 bg-white border border-[#e7eaec] rounded p-5 space-y-3">
+                  <h3 className="font-semibold text-sm">Produtos em Estoque</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                    {produtos.map((prod) => (
+                      <div
+                        key={prod.id}
+                        onClick={() =>
+                          setPdvCart((prev) => {
+                            const ex = prev.find((i) => i.produto.id === prod.id);
+                            if (ex) {
+                              return prev.map((i) =>
+                                i.produto.id === prod.id ? { ...i, qtd: i.qtd + 1 } : i
+                              );
+                            }
+                            return [...prev, { produto: prod, qtd: 1 }];
+                          })
+                        }
+                        className="p-3 border border-[#e7eaec] rounded hover:border-[#1ab394] cursor-pointer flex justify-between items-center"
+                      >
+                        <div>
+                          <strong className="block">{prod.nome}</strong>
+                          <span className="text-[#888]">
+                            {prod.codigo} • Estoque: {prod.estoque}
+                          </span>
+                        </div>
+                        <strong className="text-[#1ab394]">
+                          R$ {prod.preco_venda.toFixed(2)}
+                        </strong>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-white border border-[#e7eaec] rounded p-5 flex flex-col justify-between space-y-4 text-xs">
+                  <div className="space-y-3">
+                    <h3 className="font-semibold text-sm border-b border-[#e7eaec] pb-2">
+                      Resumo da Venda
+                    </h3>
+                    <input
+                      type="text"
+                      value={pdvClienteNome}
+                      onChange={(e) => setPdvClienteNome(e.target.value)}
+                      className="w-full border border-[#e5e6e7] rounded px-3 py-1.5"
+                    />
+                    <div className="space-y-2">
+                      {pdvCart.map((item) => (
+                        <div
+                          key={item.produto.id}
+                          className="flex justify-between items-center bg-[#f9f9f9] p-2 rounded"
+                        >
+                          <span>
+                            {item.qtd}x {item.produto.nome}
+                          </span>
+                          <strong>R$ {(item.qtd * item.produto.preco_venda).toFixed(2)}</strong>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                   <button
                     type="button"
                     onClick={handleFinalizarPDV}
                     disabled={pdvCart.length === 0}
-                    className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-300 text-white py-2.5 rounded-xl text-xs font-bold transition cursor-pointer"
+                    className="w-full bg-[#1ab394] hover:bg-[#18a689] disabled:bg-[#ccc] text-white py-2 rounded font-bold cursor-pointer"
                   >
-                    Finalizar Venda & Lançar no Caixa
+                    Finalizar Venda
                   </button>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* 4. PAINEL / DASHBOARD */}
-        {activeModule === 'dashboard' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-xl font-bold text-slate-900">
-                  Painel Gerencial • SOS Óticas Prime
-                </h1>
-                <p className="text-xs text-slate-500">
-                  Indicadores de Ordens de Serviço, Gavetas de Entrega, Laboratório e Faturamento
-                </p>
-              </div>
-              <button
-                onClick={handleCreateNewOS}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                Nova O.S.
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                <span className="text-xs font-bold text-slate-500 uppercase">
-                  Total em Ordens de Serviço
-                </span>
-                <p className="text-2xl font-black text-slate-900 mt-1">
-                  R$ {totalFaturado.toFixed(2)}
-                </p>
-                <span className="text-[11px] text-emerald-600 font-semibold">
-                  {ordens.length} O.S. registradas
-                </span>
-              </div>
-
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                <span className="text-xs font-bold text-slate-500 uppercase">
-                  Saldo a Receber na Entrega
-                </span>
-                <p className="text-2xl font-black text-amber-600 mt-1">
-                  R$ {totalAReceber.toFixed(2)}
-                </p>
-                <span className="text-[11px] text-slate-500">
-                  Valores pendentes de retirada
-                </span>
+          {/* 4. PAINEL DE INFORMAÇÕES */}
+          {activeModule === 'dashboard' && (
+            <div className="space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-white p-5 rounded border border-[#e7eaec]">
+                  <span className="text-xs font-bold uppercase text-[#888]">
+                    Total em Ordens de Serviço
+                  </span>
+                  <p className="text-2xl font-bold text-[#2f4050] mt-1">
+                    R$ {totalFaturado.toFixed(2)}
+                  </p>
+                </div>
+                <div className="bg-white p-5 rounded border border-[#e7eaec]">
+                  <span className="text-xs font-bold uppercase text-[#888]">
+                    Saldo a Receber (Retiradas)
+                  </span>
+                  <p className="text-2xl font-bold text-[#f8ac59] mt-1">
+                    R$ {totalAReceber.toFixed(2)}
+                  </p>
+                </div>
+                <div className="bg-white p-5 rounded border border-[#e7eaec]">
+                  <span className="text-xs font-bold uppercase text-[#888]">
+                    O.S. Ativas no Lab / Loja
+                  </span>
+                  <p className="text-2xl font-bold text-[#0E9AEF] mt-1">{ordens.length}</p>
+                </div>
+                <div className="bg-white p-5 rounded border border-[#e7eaec]">
+                  <span className="text-xs font-bold uppercase text-[#888]">
+                    Clientes Cadastrados
+                  </span>
+                  <p className="text-2xl font-bold text-[#1ab394] mt-1">{clientes.length}</p>
+                </div>
               </div>
 
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                <span className="text-xs font-bold text-slate-500 uppercase">
-                  Em Produção (Lab / Montagem)
-                </span>
-                <p className="text-2xl font-black text-blue-600 mt-1">
-                  {
-                    ordens.filter(
-                      (o) =>
-                        o.status === 'No Laboratório' ||
-                        o.status === 'Em Montagem' ||
-                        o.status === 'Conferência / Lensômetro'
-                    ).length
-                  }
-                </p>
-                <span className="text-[11px] text-slate-500">Acompanhamento técnico</span>
-              </div>
-
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                <span className="text-xs font-bold text-slate-500 uppercase">
-                  Prontas na Gaveta
-                </span>
-                <p className="text-2xl font-black text-emerald-600 mt-1">
-                  {ordens.filter((o) => o.status === 'Pronta na Gaveta').length}
-                </p>
-                <span className="text-[11px] text-emerald-700 font-semibold">
-                  Conferidas no lensômetro
-                </span>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-              <h3 className="font-bold text-sm text-slate-800 mb-3">
-                Ordens de Serviço em Andamento (Clique para abrir a Ficha Completa da O.S.)
-              </h3>
-              <div className="space-y-2.5">
-                {ordens.map((os) => (
-                  <div
-                    key={os.id}
-                    onClick={() => {
-                      setSelectedOSId(os.id);
-                      setActiveModule('os_editor');
-                    }}
-                    className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/30 transition cursor-pointer"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="font-mono font-bold text-xs bg-slate-900 text-white px-2.5 py-1 rounded-lg">
-                        #{os.numero_os} • {os.codigo_os}
-                      </span>
+              <div className="bg-white border border-[#e7eaec] rounded p-5">
+                <h3 className="font-semibold text-sm mb-3">
+                  Ordens de Serviço Recentes (Clique para abrir)
+                </h3>
+                <div className="space-y-2 text-xs">
+                  {ordens.map((os) => (
+                    <div
+                      key={os.id}
+                      onClick={() => {
+                        setSelectedOSId(os.id);
+                        setActiveModule('os_editor');
+                      }}
+                      className="p-3 border border-[#e7eaec] rounded hover:border-[#1ab394] flex justify-between items-center cursor-pointer"
+                    >
                       <div>
-                        <p className="font-bold text-xs text-slate-900">
-                          {os.cliente_nome} • <span className="text-amber-700">{os.bandeja_gaveta}</span>
-                        </p>
-                        <p className="text-[11px] text-slate-500">
-                          {os.lente_descricao} | Armação: {os.armacao_descricao}
-                        </p>
+                        <strong>
+                          O.S. #{os.numero_os} ({os.codigo_os}) — {os.cliente_nome}
+                        </strong>
+                        <p className="text-[#888]">{os.lente_descricao}</p>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${getStatusBadge(
-                          os.status
-                        )}`}
-                      >
-                        {os.status}
+                      <span className="font-bold text-[#1ab394]">
+                        R$ {os.valor_total.toFixed(2)}
                       </span>
-                      <strong className="text-xs">R$ {os.valor_total.toFixed(2)}</strong>
                     </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 5. CLIENTES */}
+          {activeModule === 'clientes' && (
+            <div className="space-y-5">
+              <div className="bg-white border border-[#e7eaec] rounded p-5 flex items-center justify-between">
+                <h1 className="text-lg font-semibold">Clientes Cadastrados</h1>
+                <button
+                  onClick={() => setShowNewClientModal(true)}
+                  className="bg-[#1ab394] text-white px-4 py-2 rounded text-xs font-bold cursor-pointer"
+                >
+                  + Novo Cliente
+                </button>
+              </div>
+
+              {showNewClientModal && (
+                <form
+                  onSubmit={handleAddCliente}
+                  className="bg-white p-5 rounded border border-[#1ab394] grid grid-cols-1 md:grid-cols-3 gap-3 text-xs"
+                >
+                  <input
+                    type="text"
+                    required
+                    placeholder="Nome Completo *"
+                    value={newClient.nome}
+                    onChange={(e) => setNewClient({ ...newClient, nome: e.target.value })}
+                    className="border border-[#e5e6e7] rounded px-3 py-2"
+                  />
+                  <input
+                    type="text"
+                    placeholder="CPF"
+                    value={newClient.cpf}
+                    onChange={(e) => setNewClient({ ...newClient, cpf: e.target.value })}
+                    className="border border-[#e5e6e7] rounded px-3 py-2"
+                  />
+                  <input
+                    type="text"
+                    required
+                    placeholder="Telefone *"
+                    value={newClient.telefone}
+                    onChange={(e) =>
+                      setNewClient({
+                        ...newClient,
+                        telefone: e.target.value,
+                        whatsapp: e.target.value,
+                      })
+                    }
+                    className="border border-[#e5e6e7] rounded px-3 py-2"
+                  />
+                  <div className="md:col-span-3 flex justify-end gap-2">
+                    <button
+                      type="submit"
+                      className="bg-[#1ab394] text-white px-4 py-1.5 rounded font-bold"
+                    >
+                      Salvar Cliente
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                {clientes.map((c) => (
+                  <div key={c.id} className="bg-white p-4 rounded border border-[#e7eaec] space-y-1">
+                    <strong className="text-sm block">{c.nome}</strong>
+                    <p>CPF: {c.cpf}</p>
+                    <p>Tel: {c.telefone}</p>
+                    <p className="text-[#888]">{c.endereco}</p>
                   </div>
                 ))}
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* 5. MÓDULO DE CLIENTES */}
-        {activeModule === 'clientes' && (
-          <div className="space-y-5">
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-              <div>
-                <h1 className="text-xl font-bold text-slate-900">
-                  Clientes, Fichas Clínicas & Histórico de Receitas
-                </h1>
-                <p className="text-xs text-slate-500">
-                  Histórico completo de graus, compras e limite de crediário próprio
-                </p>
-              </div>
-              <button
-                onClick={() => setShowNewClientModal(true)}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                Novo Cliente
-              </button>
-            </div>
-
-            {showNewClientModal && (
-              <form
-                onSubmit={handleAddCliente}
-                className="bg-white p-5 rounded-2xl border-2 border-blue-500 shadow-md grid grid-cols-1 md:grid-cols-3 gap-4"
-              >
-                <div className="md:col-span-3 font-bold text-sm text-blue-900">
-                  Cadastrar Novo Cliente
-                </div>
-                <input
-                  type="text"
-                  required
-                  placeholder="Nome Completo *"
-                  value={newClient.nome}
-                  onChange={(e) => setNewClient({ ...newClient, nome: e.target.value })}
-                  className="rounded-xl border border-slate-300 px-3 py-2 text-xs"
-                />
-                <input
-                  type="text"
-                  placeholder="CPF"
-                  value={newClient.cpf}
-                  onChange={(e) => setNewClient({ ...newClient, cpf: e.target.value })}
-                  className="rounded-xl border border-slate-300 px-3 py-2 text-xs"
-                />
-                <input
-                  type="text"
-                  required
-                  placeholder="Telefone *"
-                  value={newClient.telefone}
-                  onChange={(e) =>
-                    setNewClient({
-                      ...newClient,
-                      telefone: e.target.value,
-                      whatsapp: e.target.value,
-                    })
-                  }
-                  className="rounded-xl border border-slate-300 px-3 py-2 text-xs"
-                />
-                <input
-                  type="text"
-                  placeholder="Endereço Completo"
-                  value={newClient.endereco}
-                  onChange={(e) => setNewClient({ ...newClient, endereco: e.target.value })}
-                  className="md:col-span-2 rounded-xl border border-slate-300 px-3 py-2 text-xs"
-                />
-                <input
-                  type="text"
-                  placeholder="Observações Ópticas"
-                  value={newClient.observacoes}
-                  onChange={(e) => setNewClient({ ...newClient, observacoes: e.target.value })}
-                  className="rounded-xl border border-slate-300 px-3 py-2 text-xs"
-                />
-                <div className="md:col-span-3 flex justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowNewClientModal(false)}
-                    className="px-4 py-2 rounded-xl border border-slate-300 text-xs"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold"
-                  >
-                    Salvar Cliente
-                  </button>
-                </div>
-              </form>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {clientes.map((c) => (
-                <div
-                  key={c.id}
-                  className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2"
+          {/* 6. PRODUTOS / ESTOQUE */}
+          {activeModule === 'estoque' && (
+            <div className="space-y-5">
+              <div className="bg-white border border-[#e7eaec] rounded p-5 flex items-center justify-between">
+                <h1 className="text-lg font-semibold">Produtos • Armações e Lentes</h1>
+                <button
+                  onClick={() => setShowNewProdModal(true)}
+                  className="bg-[#1ab394] text-white px-4 py-2 rounded text-xs font-bold cursor-pointer"
                 >
-                  <div className="flex items-start justify-between">
-                    <h3 className="font-bold text-sm text-slate-900">{c.nome}</h3>
-                    <span className="text-[11px] font-mono bg-slate-100 px-2 py-0.5 rounded">
-                      {c.cpf}
-                    </span>
+                  + Cadastrar novo produto
+                </button>
+              </div>
+
+              {showNewProdModal && (
+                <form
+                  onSubmit={handleAddProduto}
+                  className="bg-white p-5 rounded border border-[#1ab394] grid grid-cols-1 md:grid-cols-4 gap-3 text-xs"
+                >
+                  <input
+                    type="text"
+                    required
+                    placeholder="Código"
+                    value={newProd.codigo}
+                    onChange={(e) => setNewProd({ ...newProd, codigo: e.target.value })}
+                    className="border border-[#e5e6e7] rounded px-3 py-2"
+                  />
+                  <input
+                    type="text"
+                    required
+                    placeholder="Nome do Produto *"
+                    value={newProd.nome}
+                    onChange={(e) => setNewProd({ ...newProd, nome: e.target.value })}
+                    className="md:col-span-2 border border-[#e5e6e7] rounded px-3 py-2"
+                  />
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    placeholder="Valor Venda"
+                    value={newProd.preco_venda || ''}
+                    onChange={(e) =>
+                      setNewProd({ ...newProd, preco_venda: parseFloat(e.target.value) || 0 })
+                    }
+                    className="border border-[#e5e6e7] rounded px-3 py-2"
+                  />
+                  <div className="md:col-span-4 flex justify-end">
+                    <button
+                      type="submit"
+                      className="bg-[#1ab394] text-white px-4 py-1.5 rounded font-bold"
+                    >
+                      Salvar Produto
+                    </button>
                   </div>
-                  <p className="text-xs text-slate-600 font-semibold">{c.telefone}</p>
-                  <p className="text-xs text-slate-500">{c.endereco}</p>
-                  {c.observacoes && (
-                    <p className="text-[11px] bg-blue-50 text-blue-800 p-2 rounded-lg">
-                      {c.observacoes}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+                </form>
+              )}
 
-        {/* 6. MÓDULO DE ESTOQUE (ARMAÇÕES, LENTES E ETIQUETAS) */}
-        {activeModule === 'estoque' && (
-          <div className="space-y-5">
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-              <div>
-                <h1 className="text-xl font-bold text-slate-900">
-                  Estoque de Armações, Óculos Solares, Lentes & Etiquetas
-                </h1>
-                <p className="text-xs text-slate-500">
-                  Controle de peças com medidas técnicas (Aro, Ponte, Vertical, Diagonal, Haste) e código de barras
-                </p>
-              </div>
-              <button
-                onClick={() => setShowNewProdModal(true)}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                Nova Armação / Lente
-              </button>
-            </div>
-
-            {showNewProdModal && (
-              <form
-                onSubmit={handleAddProduto}
-                className="bg-white p-5 rounded-2xl border-2 border-blue-500 shadow-md grid grid-cols-1 md:grid-cols-4 gap-3 text-xs"
-              >
-                <div className="md:col-span-4 font-bold text-sm text-blue-900">
-                  Cadastrar Produto no Estoque da Ótica
-                </div>
-                <input
-                  type="text"
-                  required
-                  placeholder="Código Interno (Ex: ARM-1020)"
-                  value={newProd.codigo}
-                  onChange={(e) => setNewProd({ ...newProd, codigo: e.target.value })}
-                  className="rounded-xl border border-slate-300 px-3 py-2"
-                />
-                <input
-                  type="text"
-                  required
-                  placeholder="Descrição / Modelo *"
-                  value={newProd.nome}
-                  onChange={(e) => setNewProd({ ...newProd, nome: e.target.value })}
-                  className="md:col-span-2 rounded-xl border border-slate-300 px-3 py-2"
-                />
-                <select
-                  value={newProd.categoria}
-                  onChange={(e) =>
-                    setNewProd({
-                      ...newProd,
-                      categoria: e.target.value as Produto['categoria'],
-                    })
-                  }
-                  className="rounded-xl border border-slate-300 px-3 py-2 font-bold"
-                >
-                  <option value="Armação Receituário">Armação Receituário</option>
-                  <option value="Óculos Solar">Óculos Solar</option>
-                  <option value="Lente Oftálmica">Lente Oftálmica</option>
-                </select>
-                <input
-                  type="text"
-                  placeholder="Grife / Marca"
-                  value={newProd.marca}
-                  onChange={(e) => setNewProd({ ...newProd, marca: e.target.value })}
-                  className="rounded-xl border border-slate-300 px-3 py-2"
-                />
-                <input
-                  type="text"
-                  placeholder="Referência / Cor"
-                  value={newProd.cor}
-                  onChange={(e) =>
-                    setNewProd({ ...newProd, cor: e.target.value, referencia: e.target.value })
-                  }
-                  className="rounded-xl border border-slate-300 px-3 py-2"
-                />
-                <input
-                  type="number"
-                  step="0.01"
-                  required
-                  placeholder="Preço Venda (R$)"
-                  value={newProd.preco_venda || ''}
-                  onChange={(e) =>
-                    setNewProd({ ...newProd, preco_venda: parseFloat(e.target.value) || 0 })
-                  }
-                  className="rounded-xl border border-slate-300 px-3 py-2 font-bold"
-                />
-                <input
-                  type="number"
-                  required
-                  placeholder="Qtd Estoque"
-                  value={newProd.estoque}
-                  onChange={(e) =>
-                    setNewProd({ ...newProd, estoque: parseInt(e.target.value, 10) || 0 })
-                  }
-                  className="rounded-xl border border-slate-300 px-3 py-2"
-                />
-                <div className="md:col-span-4 flex justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowNewProdModal(false)}
-                    className="px-4 py-2 rounded-xl border border-slate-300"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 rounded-xl bg-blue-600 text-white font-bold"
-                  >
-                    Salvar no Estoque
-                  </button>
-                </div>
-              </form>
-            )}
-
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase text-slate-500">
-                    <th className="py-3.5 px-4">Código / Barras</th>
-                    <th className="py-3.5 px-4">Produto / Grife</th>
-                    <th className="py-3.5 px-4">Categoria</th>
-                    <th className="py-3.5 px-4">Medidas (Aro/Ponte/Vert)</th>
-                    <th className="py-3.5 px-4 text-center">Estoque</th>
-                    <th className="py-3.5 px-4 text-right">Preço Venda</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {produtos.map((p) => (
-                    <tr key={p.id} className="hover:bg-slate-50">
-                      <td className="py-3 px-4">
-                        <span className="font-mono font-bold text-blue-700 block">{p.codigo}</span>
-                        <span className="font-mono text-[10px] text-slate-400">
-                          {p.codigo_barras || '789102030000'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <strong className="text-slate-900 block">{p.nome}</strong>
-                        <span className="text-slate-500">
-                          {p.marca} • {p.cor}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">{p.categoria}</td>
-                      <td className="py-3 px-4 font-mono">
-                        {p.medida_aro !== '-'
-                          ? `${p.medida_aro} / ${p.medida_ponte} / ${p.medida_vertical}mm`
-                          : '-'}
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-bold">
-                          {p.estoque} un
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-right font-black text-slate-900">
-                        R$ {p.preco_venda.toFixed(2)}
-                      </td>
+              <div className="bg-white border border-[#e7eaec] rounded overflow-hidden">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-[#f5f5f6] border-b border-[#e7eaec] font-bold">
+                      <th className="py-3 px-4">Código</th>
+                      <th className="py-3 px-4">Descrição</th>
+                      <th className="py-3 px-4">Categoria</th>
+                      <th className="py-3 px-4 text-center">Estoque</th>
+                      <th className="py-3 px-4 text-right">Preço</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-[#e7eaec]">
+                    {produtos.map((p) => (
+                      <tr key={p.id}>
+                        <td className="py-3 px-4 font-mono font-bold">{p.codigo}</td>
+                        <td className="py-3 px-4 font-semibold">{p.nome}</td>
+                        <td className="py-3 px-4">{p.categoria}</td>
+                        <td className="py-3 px-4 text-center">{p.estoque}</td>
+                        <td className="py-3 px-4 text-right font-bold">
+                          R$ {p.preco_venda.toFixed(2)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* 7. MÓDULO FINANCEIRO / FLUXO DE CAIXA */}
-        {activeModule === 'financeiro' && (
-          <div className="space-y-5">
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-              <h1 className="text-xl font-bold text-slate-900">
-                Fluxo de Caixa, Recebimentos de O.S. & Contas de Laboratório
-              </h1>
-              <p className="text-xs text-slate-500">
-                Controle financeiro diário de entradas (Sinais, Retiradas, PDV) e saídas de fornecedores/surfaçagem
-              </p>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          {/* 7. FINANCEIRO */}
+          {activeModule === 'financeiro' && (
+            <div className="bg-white border border-[#e7eaec] rounded overflow-hidden">
+              <div className="p-4 border-b border-[#e7eaec] font-semibold">
+                Movimentações Financeiras / Caixa
+              </div>
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase text-slate-500">
-                    <th className="py-3.5 px-4">Data</th>
-                    <th className="py-3.5 px-4">Descrição do Lançamento</th>
-                    <th className="py-3.5 px-4">Categoria</th>
-                    <th className="py-3.5 px-4">Meio de Pagamento</th>
-                    <th className="py-3.5 px-4">Situação</th>
-                    <th className="py-3.5 px-4 text-right">Valor</th>
+                  <tr className="bg-[#f5f5f6] border-b border-[#e7eaec] font-bold">
+                    <th className="py-3 px-4">Data</th>
+                    <th className="py-3 px-4">Descrição</th>
+                    <th className="py-3 px-4">Forma Pagto</th>
+                    <th className="py-3 px-4 text-right">Valor</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200">
+                <tbody className="divide-y divide-[#e7eaec]">
                   {financeiro.map((f) => (
-                    <tr key={f.id} className="hover:bg-slate-50">
-                      <td className="py-3.5 px-4 font-mono">{f.data_lancamento}</td>
-                      <td className="py-3.5 px-4 font-semibold text-slate-900">{f.descricao}</td>
-                      <td className="py-3.5 px-4">{f.categoria}</td>
-                      <td className="py-3.5 px-4">{f.forma_pagamento}</td>
-                      <td className="py-3.5 px-4">
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                            f.status === 'Pago'
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : 'bg-amber-100 text-amber-800'
-                          }`}
-                        >
-                          {f.status}
-                        </span>
-                      </td>
+                    <tr key={f.id}>
+                      <td className="py-3 px-4">{f.data_lancamento}</td>
+                      <td className="py-3 px-4 font-semibold">{f.descricao}</td>
+                      <td className="py-3 px-4">{f.forma_pagamento}</td>
                       <td
-                        className={`py-3.5 px-4 text-right font-black ${
-                          f.tipo === 'Entrada' ? 'text-emerald-600' : 'text-red-600'
+                        className={`py-3 px-4 text-right font-bold ${
+                          f.tipo === 'Entrada' ? 'text-[#1ab394]' : 'text-[#ed5565]'
                         }`}
                       >
-                        {f.tipo === 'Entrada' ? '+' : '-'} R$ {f.valor.toFixed(2)}
+                        R$ {f.valor.toFixed(2)}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* 8. CONEXÃO SUPABASE */}
-        {activeModule === 'supabase' && (
-          <SupabaseConfigView
-            onConfigChanged={() => setSupabaseConnected(getSupabaseConfig().isConfigured)}
-            onSyncLocalToSupabase={handleSyncLocalToSupabase}
-          />
-        )}
-      </main>
+          {/* 8. SUPABASE */}
+          {activeModule === 'supabase' && (
+            <SupabaseConfigView
+              onConfigChanged={() => setSupabaseConnected(getSupabaseConfig().isConfigured)}
+              onSyncLocalToSupabase={handleSyncLocalToSupabase}
+            />
+          )}
+        </main>
+      </div>
 
-      {/* MODAL DE IMPRESSÃO DE O.S. (2 VIAS) */}
       {printingOS && (
         <PrintOSModal os={printingOS} onClose={() => setPrintingOS(null)} />
       )}
