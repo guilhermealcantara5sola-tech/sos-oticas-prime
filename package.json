@@ -2,34 +2,12 @@
   "name": "sos-oticas-prime",
   "private": true,
   "version": "1.0.0",
+  "type": "module",
   "description": "SOS Óticas Prime - Sistema de Gestão Óptica e Ordem de Serviço",
-  "author": "SOS Óticas Prime",
-  "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview",
-    "electron:start": "electron .",
-    "dist:win": "npm run build && electron-builder --win portable",
-    "dist:mac": "npm run build && electron-builder --mac dir"
-  },
-  "build": {
-    "appId": "br.com.sosoticasprime.app",
-    "productName": "SOS Oticas Prime",
-    "directories": {
-      "output": "instaladores"
-    },
-    "files": [
-      "dist/**/*",
-      "electron/**/*"
-    ],
-    "win": {
-      "target": "portable",
-      "artifactName": "SOS-Oticas-Prime-Setup.exe"
-    },
-    "mac": {
-      "target": "dir"
-    }
+    "preview": "vite preview"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.48.1",
@@ -42,8 +20,6 @@
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
-    "electron": "^33.2.1",
-    "electron-builder": "^25.1.8",
     "postcss": "^8.5.1",
     "tailwindcss": "^3.4.17",
     "typescript": "~5.6.2",

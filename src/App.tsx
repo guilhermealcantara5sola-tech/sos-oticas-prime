@@ -133,26 +133,7 @@ export function App() {
     localStorage.setItem('sos_otica_financeiro_v2', JSON.stringify(financeiro));
   }, [financeiro]);
 
-  useEffect(() => {
-    try {
-      if (window.location.protocol.startsWith('http')) {
-        const currentOS = ordens.find((o) => o.id === selectedOSId);
-        if (activeModule === 'os_editor' && currentOS) {
-          window.history.replaceState(
-            null,
-            '',
-            `/movimentacao/ordem-servico/${currentOS.codigo_os}/editar`
-          );
-        } else if (activeModule === 'os_list') {
-          window.history.replaceState(null, '', `/movimentacao/ordem-servico`);
-        } else {
-          window.history.replaceState(null, '', `/${activeModule}`);
-        }
-      }
-    } catch {
-      // Ignora em protocolo file:// do executável offline
-    }
-  }, [activeModule, selectedOSId, ordens]);
+  // Mantém a URL limpa na raiz para evitar caminhos longos na Vercel
 
   const fetchFromSupabase = async () => {
     const client = getSupabaseClient();
