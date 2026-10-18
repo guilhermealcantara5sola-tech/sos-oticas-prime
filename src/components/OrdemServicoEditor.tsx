@@ -17,10 +17,10 @@ import {
   Trash2,
   CreditCard,
   Banknote,
-  Upload,
-  FileText,
-  Sparkles,
   ArrowLeft,
+  Smartphone,
+  Table2,
+  Share2,
 } from 'lucide-react';
 
 interface ItemOS {
@@ -58,6 +58,7 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
   const [form, setForm] = useState<OrdemServico>(initialOS);
   const [saving, setSaving] = useState(false);
   const [savedToast, setSavedToast] = useState(false);
+  const [modoReceitaMobile, setModoReceitaMobile] = useState<'tabela' | 'cards'>('tabela');
 
   // Produtos e Serviços na O.S. (Padrão ssOtica)
   const [itensOS, setItensOS] = useState<ItemOS[]>([
@@ -65,7 +66,9 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
       id: 'item-1',
       codigo: 'LEN-VAR-01',
       referencia: 'VCMAX-167',
-      descricao: initialOS.lente_descricao || 'Par Lentes Multifocal Varilux Comfort Max 1.67 Crizal Rock',
+      descricao:
+        initialOS.lente_descricao ||
+        'Par Lentes Multifocal Varilux Comfort Max 1.67 Crizal Rock',
       unidade: 'PAR',
       qtde: 1,
       valorUnit: initialOS.valor_lentes || 1680.0,
@@ -77,7 +80,8 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
             id: 'item-2',
             codigo: 'ARM-8042',
             referencia: initialOS.armacao_referencia || 'AH1402-A01',
-            descricao: initialOS.armacao_descricao || 'Armação Ana Hickmann Titanium Duo Fashion',
+            descricao:
+              initialOS.armacao_descricao || 'Armação Ana Hickmann Titanium Duo Fashion',
             unidade: 'UN',
             qtde: 1,
             valorUnit: initialOS.valor_armacao || 580.0,
@@ -96,7 +100,9 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
   // Adiantamento (Sinal)
   const [formaAdiantamento, setFormaAdiantamento] = useState('PIX');
   const [valorAdiantamento, setValorAdiantamento] = useState<string>('');
-  const [dataLancCaixa, setDataLancCaixa] = useState(initialOS.data_abertura || '2026-10-18');
+  const [dataLancCaixa, setDataLancCaixa] = useState(
+    initialOS.data_abertura || '2026-10-18'
+  );
   const [qtdeParcelasSinal, setQtdeParcelasSinal] = useState(1);
   const [codAutorizacao, setCodAutorizacao] = useState('');
   const [adiantamentos, setAdiantamentos] = useState<PagamentoItemOS[]>(
@@ -115,8 +121,12 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
   // Campos específicos Informações Adicionais (ssOtica)
   const [localMontagem, setLocalMontagem] = useState<'Loja' | 'Laboratório'>('Laboratório');
   const [clientePossuiReceita, setClientePossuiReceita] = useState<'Sim' | 'Não'>('Sim');
-  const [lenteProntaOuSurfacada, setLenteProntaOuSurfacada] = useState<'Pronta' | 'Surfaçada'>('Surfaçada');
-  const [materialRadio, setMaterialRadio] = useState<'Policarbonato' | 'Resina' | 'Trivex'>('Resina');
+  const [lenteProntaOuSurfacada, setLenteProntaOuSurfacada] = useState<
+    'Pronta' | 'Surfaçada'
+  >('Surfaçada');
+  const [materialRadio, setMaterialRadio] = useState<'Policarbonato' | 'Resina' | 'Trivex'>(
+    'Resina'
+  );
   const [coloracaoLente, setColoracaoLente] = useState('Incolor c/ Blue UV');
   const [armacaoPropria, setArmacaoPropria] = useState<'Sim' | 'Não'>(
     initialOS.armacao_procedencia === 'Armação do Cliente' ? 'Sim' : 'Não'
@@ -181,8 +191,10 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
     const odEsf = parseFloat((form.longe_od_esf || '0').replace(',', '.')) || 0;
     const oeEsf = parseFloat((form.longe_oe_esf || '0').replace(',', '.')) || 0;
 
-    const pertoOd = addNum !== 0 ? `${odEsf + addNum >= 0 ? '+' : ''}${(odEsf + addNum).toFixed(2)}` : '';
-    const pertoOe = addNum !== 0 ? `${oeEsf + addNum >= 0 ? '+' : ''}${(oeEsf + addNum).toFixed(2)}` : '';
+    const pertoOd =
+      addNum !== 0 ? `${odEsf + addNum >= 0 ? '+' : ''}${(odEsf + addNum).toFixed(2)}` : '';
+    const pertoOe =
+      addNum !== 0 ? `${oeEsf + addNum >= 0 ? '+' : ''}${(oeEsf + addNum).toFixed(2)}` : '';
 
     setForm((prev) => ({
       ...prev,
@@ -204,7 +216,8 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
         p.nome.toLowerCase().includes(buscaProduto.toLowerCase()) ||
         p.codigo.toLowerCase() === buscaProduto.toLowerCase()
     );
-    const valUnit = precoAdd !== '' ? parseFloat(precoAdd) || 0 : prod ? prod.preco_venda : 250;
+    const valUnit =
+      precoAdd !== '' ? parseFloat(precoAdd) || 0 : prod ? prod.preco_venda : 250;
     const novoItem: ItemOS = {
       id: `item-${Date.now()}`,
       codigo: prod ? prod.codigo : 'ITEM-AVULSO',
@@ -262,6 +275,24 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
     setTimeout(() => setSavedToast(false), 3500);
   };
 
+  const handleShareWhatsApp = () => {
+    const phone = (form.cliente_telefone || '').replace(/\D/g, '');
+    const msg = encodeURIComponent(
+      `*SOS ÓTICAS PRIME - PROTOCOLO DE O.S.*\n` +
+        `📋 *O.S. Nº:* #${form.numero_os} (Cód: ${form.codigo_os})\n` +
+        `👤 *Cliente:* ${form.cliente_nome}\n` +
+        `👓 *Lente:* ${form.lente_descricao}\n` +
+        `🕶️ *Armação:* ${form.armacao_descricao}\n` +
+        `📅 *Previsão de Entrega:* ${form.data_previsao} às ${form.hora_previsao}\n` +
+        `💰 *Total:* R$ ${form.valor_total.toFixed(2)} | *Sinal:* R$ ${form.valor_entrada.toFixed(2)} | *Restante:* R$ ${form.valor_restante.toFixed(2)}\n` +
+        `📌 *Etapa Atual:* ${form.status}`
+    );
+    window.open(
+      phone ? `https://wa.me/55${phone}?text=${msg}` : `https://wa.me/?text=${msg}`,
+      '_blank'
+    );
+  };
+
   const aroNum = parseFloat(form.armacao_aro) || 0;
   const ponteNum = parseFloat(form.armacao_ponte) || 0;
   const aroMaisPonte = aroNum + ponteNum > 0 ? String(aroNum + ponteNum) : '';
@@ -271,102 +302,159 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
   const dpTotal = dnpOdNum + dnpOeNum > 0 ? (dnpOdNum + dnpOeNum).toFixed(1) : '';
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5 pb-16 text-[#676a6c] font-sans">
-      {/* SUB-HEADER TÍTULO PADRÃO SSOTICA */}
-      <div className="bg-white border-b border-[#e7eaec] -mx-6 -mt-6 px-6 py-4 mb-5 flex flex-wrap items-center justify-between gap-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={onBack}
-            className="p-1.5 rounded border border-[#e5e6e7] hover:bg-[#f3f3f4] text-[#676a6c] cursor-pointer"
-            title="Voltar para busca de O.S."
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-          <div className="flex items-center gap-2.5 text-[#676a6c]">
-            <svg
-              className="w-7 h-7 text-[#676a6c]"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.75"
-            >
-              <path d="M2 14a4 4 0 1 0 8 0 4 4 0 1 0-8 0Z" />
-              <path d="M14 14a4 4 0 1 0 8 0 4 4 0 1 0-8 0Z" />
-              <path d="M10 14h4" />
-              <path d="M2 14V9a2 2 0 0 1 2-2h2" />
-              <path d="M22 14V9a2 2 0 0 0-2-2h-2" />
-            </svg>
-            <h1 className="text-2xl font-light tracking-tight text-[#676a6c]">
-              Ordens de Serviço
-            </h1>
-            <span className="ml-2 text-xs font-mono bg-[#e7f4fd] text-[#0E9AEF] border border-[#b6e0fe] px-2.5 py-0.5 rounded font-semibold">
+    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 pb-20 text-[#676a6c] font-sans">
+      {/* SUB-HEADER TÍTULO PADRÃO SSOTICA (Responsivo para Celular e Desktop) */}
+      <div className="bg-white border-b border-[#e7eaec] -mx-3 sm:-mx-4 md:-mx-6 -mt-3 sm:-mt-4 md:-mt-6 px-3 sm:px-5 md:px-6 py-3 md:py-4 mb-3 sm:mb-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center justify-between sm:justify-start gap-2.5">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <button
+                type="button"
+                onClick={onBack}
+                className="p-2 sm:p-1.5 rounded border border-[#e5e6e7] hover:bg-[#f3f3f4] text-[#676a6c] cursor-pointer active:scale-95 transition"
+                title="Voltar para busca de O.S."
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+              <div className="flex items-center gap-2 text-[#676a6c]">
+                <svg
+                  className="w-6 h-6 sm:w-7 sm:h-7 text-[#676a6c] shrink-0"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                >
+                  <path d="M2 14a4 4 0 1 0 8 0 4 4 0 1 0-8 0Z" />
+                  <path d="M14 14a4 4 0 1 0 8 0 4 4 0 1 0-8 0Z" />
+                  <path d="M10 14h4" />
+                  <path d="M2 14V9a2 2 0 0 1 2-2h2" />
+                  <path d="M22 14V9a2 2 0 0 0-2-2h-2" />
+                </svg>
+                <h1 className="text-lg sm:text-2xl font-light tracking-tight text-[#676a6c]">
+                  Ordens de Serviço
+                </h1>
+              </div>
+            </div>
+            <span className="text-xs font-mono bg-[#e7f4fd] text-[#0E9AEF] border border-[#b6e0fe] px-2.5 py-1 rounded font-bold shrink-0">
               #{form.numero_os} • {form.codigo_os}
             </span>
           </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {savedToast && (
+              <span className="w-full sm:w-auto flex items-center justify-center gap-1.5 bg-[#dff0d8] text-[#3c763d] border border-[#d6e9c6] px-3 py-1.5 rounded text-xs font-semibold">
+                <CheckCircle2 className="w-4 h-4" />
+                O.S. salva com sucesso!
+              </span>
+            )}
+
+            <select
+              value={form.status}
+              onChange={(e) => setForm({ ...form, status: e.target.value as StatusOS })}
+              className="flex-1 sm:flex-initial border border-[#e5e6e7] rounded px-2.5 py-2 sm:py-1.5 text-xs font-semibold bg-white text-[#676a6c] focus:outline-none focus:border-[#1ab394]"
+            >
+              <option value="Aberta">Etapa: Aberta</option>
+              <option value="Aguardando Lentes">Etapa: Aguardando Lentes</option>
+              <option value="No Laboratório">Etapa: No Laboratório</option>
+              <option value="Em Montagem">Etapa: Em Montagem</option>
+              <option value="Conferência / Lensômetro">Etapa: Conferência</option>
+              <option value="Pronta na Gaveta">Etapa: Pronta na Gaveta</option>
+              <option value="Entregue ao Cliente">Etapa: Entregue</option>
+            </select>
+
+            <button
+              type="button"
+              onClick={handleShareWhatsApp}
+              className="flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#20bd5a] text-white px-3 py-2 sm:py-1.5 rounded text-xs font-bold transition cursor-pointer"
+              title="Enviar Comprovante da O.S. no WhatsApp do Cliente"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              <span className="hidden xs:inline">WhatsApp</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onPrint(form)}
+              className="flex items-center justify-center gap-1.5 bg-white hover:bg-[#f3f3f4] text-[#676a6c] border border-[#e5e6e7] px-3 py-2 sm:py-1.5 rounded text-xs font-semibold transition cursor-pointer"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>Imprimir</span>
+            </button>
+
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex items-center justify-center gap-1.5 bg-[#1ab394] hover:bg-[#18a689] text-white px-4 sm:px-5 py-2 sm:py-1.5 rounded text-xs font-bold transition shadow-sm cursor-pointer"
+            >
+              <Save className="w-3.5 h-3.5" />
+              <span>{saving ? 'Salvando...' : 'Salvar O.S.'}</span>
+            </button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          {savedToast && (
-            <span className="flex items-center gap-1.5 bg-[#dff0d8] text-[#3c763d] border border-[#d6e9c6] px-3 py-1.5 rounded text-xs font-semibold">
-              <CheckCircle2 className="w-4 h-4" />
-              Ordem de Serviço salva com sucesso!
-            </span>
-          )}
-
-          <select
-            value={form.status}
-            onChange={(e) => setForm({ ...form, status: e.target.value as StatusOS })}
-            className="border border-[#e5e6e7] rounded px-3 py-1.5 text-xs font-semibold bg-white text-[#676a6c] focus:outline-none focus:border-[#1ab394]"
+        {/* BARRA DE NAVEGAÇÃO RÁPIDA DE SEÇÕES (Ideal para Celular e Desktop) */}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-3 mt-3 border-t border-[#f0f0f0] text-[11px] font-semibold">
+          <a
+            href="#sec-dados"
+            className="shrink-0 px-2.5 py-1 rounded-full bg-[#f3f3f4] hover:bg-[#1ab394] hover:text-white text-[#676a6c] transition"
           >
-            <option value="Aberta">Etapa: Aberta</option>
-            <option value="Aguardando Lentes">Etapa: Aguardando Lentes</option>
-            <option value="No Laboratório">Etapa: No Laboratório</option>
-            <option value="Em Montagem">Etapa: Em Montagem</option>
-            <option value="Conferência / Lensômetro">Etapa: Conferência / Lensômetro</option>
-            <option value="Pronta na Gaveta">Etapa: Pronta na Gaveta</option>
-            <option value="Entregue ao Cliente">Etapa: Entregue ao Cliente</option>
-          </select>
-
-          <button
-            type="button"
-            onClick={() => onPrint(form)}
-            className="flex items-center gap-1.5 bg-white hover:bg-[#f3f3f4] text-[#676a6c] border border-[#e5e6e7] px-3.5 py-1.5 rounded text-xs font-semibold transition cursor-pointer"
+            1. Dados Principais
+          </a>
+          <a
+            href="#sec-produtos"
+            className="shrink-0 px-2.5 py-1 rounded-full bg-[#f3f3f4] hover:bg-[#1ab394] hover:text-white text-[#676a6c] transition"
           >
-            <Printer className="w-3.5 h-3.5" />
-            Imprimir O.S.
-          </button>
-
-          <button
-            type="submit"
-            disabled={saving}
-            className="flex items-center gap-1.5 bg-[#1ab394] hover:bg-[#18a689] text-white px-5 py-1.5 rounded text-xs font-bold transition shadow-sm cursor-pointer"
+            2. Produtos ({itensOS.length})
+          </a>
+          <a
+            href="#sec-sinal"
+            className="shrink-0 px-2.5 py-1 rounded-full bg-[#f3f3f4] hover:bg-[#1ab394] hover:text-white text-[#676a6c] transition"
           >
-            <Save className="w-3.5 h-3.5" />
-            {saving ? 'Salvando...' : 'Salvar O.S.'}
-          </button>
+            3. Sinal (R$ {form.valor_entrada.toFixed(0)})
+          </a>
+          <a
+            href="#sec-receita"
+            className="shrink-0 px-2.5 py-1 rounded-full bg-[#e7f4fd] text-[#0E9AEF] hover:bg-[#0E9AEF] hover:text-white transition"
+          >
+            4. Receita (Longe/Perto)
+          </a>
+          <a
+            href="#sec-adicionais"
+            className="shrink-0 px-2.5 py-1 rounded-full bg-[#f3f3f4] hover:bg-[#1ab394] hover:text-white text-[#676a6c] transition"
+          >
+            5. Lente & Armação
+          </a>
+          <a
+            href="#sec-tecnologia"
+            className="shrink-0 px-2.5 py-1 rounded-full bg-[#f3f3f4] hover:bg-[#1ab394] hover:text-white text-[#676a6c] transition"
+          >
+            6. Tecnologia / Prisma
+          </a>
         </div>
       </div>
 
       {/* =====================================================================
           CARD 1: NOVA / EDITAR ORDEM DE SERVIÇO - DADOS PRINCIPAIS (Padrão ssOtica)
          ===================================================================== */}
-      <div className="bg-white border border-[#e7eaec] rounded shadow-[0_1px_1px_rgba(0,0,0,0.05)]">
-        <div className="border-b border-[#e7eaec] px-5 py-3.5 bg-white flex items-center justify-between">
-          <h2 className="text-[14px] font-semibold text-[#676a6c]">
+      <div
+        id="sec-dados"
+        className="bg-white border border-[#e7eaec] rounded shadow-[0_1px_1px_rgba(0,0,0,0.05)] scroll-mt-16"
+      >
+        <div className="border-b border-[#e7eaec] px-4 sm:px-5 py-3 bg-white flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-[13px] sm:text-[14px] font-semibold text-[#676a6c]">
             Editar Ordem de Serviço - Dados Principais ({form.codigo_os})
           </h2>
-          <span className="text-xs text-[#888]">
+          <span className="text-[11px] font-mono text-[#888]">
             movimentacao/ordem-servico/{form.codigo_os}/editar
           </span>
         </div>
 
-        <div className="p-5 space-y-4 text-xs">
+        <div className="p-3.5 sm:p-5 space-y-4 text-xs">
           {/* Linha 1: Filial | Tipo O.S. | Data de registro | Hora */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-            <div className="md:col-span-4">
+          <div className="grid grid-cols-2 md:grid-cols-12 gap-3 sm:gap-4">
+            <div className="col-span-2 md:col-span-4">
               <label className="block font-bold text-[#676a6c] mb-1">Filial</label>
-              <div className="flex items-center border border-[#e5e6e7] rounded bg-white px-2.5 py-1.5 focus-within:border-[#1ab394]">
+              <div className="flex items-center border border-[#e5e6e7] rounded bg-white px-2.5 py-2 sm:py-1.5 focus-within:border-[#1ab394]">
                 <Building2 className="w-4 h-4 text-[#888] mr-2 shrink-0" />
                 <select
                   value={form.filial}
@@ -380,7 +468,7 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
               </div>
             </div>
 
-            <div className="md:col-span-4">
+            <div className="col-span-2 md:col-span-4">
               <label className="block font-bold text-[#676a6c] mb-1">Tipo O.S.</label>
               <select
                 value={form.tipo_os}
@@ -396,9 +484,9 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
               </select>
             </div>
 
-            <div className="md:col-span-2">
+            <div className="col-span-1 md:col-span-2">
               <label className="block font-bold text-[#676a6c] mb-1">Data de registro</label>
-              <div className="flex items-center border border-[#e5e6e7] rounded bg-white px-2.5 py-1.5">
+              <div className="flex items-center border border-[#e5e6e7] rounded bg-white px-2.5 py-2 sm:py-1.5">
                 <Calendar className="w-3.5 h-3.5 text-[#888] mr-1.5 shrink-0" />
                 <input
                   type="date"
@@ -409,9 +497,9 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
               </div>
             </div>
 
-            <div className="md:col-span-2">
+            <div className="col-span-1 md:col-span-2">
               <label className="block font-bold text-[#676a6c] mb-1">Hora</label>
-              <div className="flex items-center border border-[#e5e6e7] rounded bg-white px-2.5 py-1.5">
+              <div className="flex items-center border border-[#e5e6e7] rounded bg-white px-2.5 py-2 sm:py-1.5">
                 <Clock className="w-3.5 h-3.5 text-[#888] mr-1.5 shrink-0" />
                 <input
                   type="time"
@@ -423,10 +511,10 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
           </div>
 
           {/* Linha 2: Funcionário | Número da O.S. */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4">
             <div className="md:col-span-8">
               <label className="block font-bold text-[#676a6c] mb-1">Funcionário</label>
-              <div className="flex items-center border border-[#e5e6e7] rounded bg-white px-2.5 py-1.5 focus-within:border-[#1ab394]">
+              <div className="flex items-center border border-[#e5e6e7] rounded bg-white px-2.5 py-2 sm:py-1.5 focus-within:border-[#1ab394]">
                 <User className="w-4 h-4 text-[#888] mr-2 shrink-0" />
                 <input
                   type="text"
@@ -442,7 +530,7 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
               <label className="block font-bold text-[#676a6c] mb-1 flex items-center gap-1">
                 Número da O.S. <HelpCircle className="w-3.5 h-3.5 text-[#888]" />
               </label>
-              <div className="flex items-center border border-[#e5e6e7] rounded bg-[#eee] px-3 py-1.5">
+              <div className="flex items-center border border-[#e5e6e7] rounded bg-[#eee] px-3 py-2 sm:py-1.5">
                 <Flag className="w-3.5 h-3.5 text-[#676a6c] mr-2 shrink-0" />
                 <input
                   type="text"
@@ -455,12 +543,12 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
           </div>
 
           {/* Linha 3: Cliente | Data Entrega | Hora Entrega */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-            <div className="md:col-span-8">
+          <div className="grid grid-cols-2 md:grid-cols-12 gap-3 sm:gap-4">
+            <div className="col-span-2 md:col-span-8">
               <label className="block font-bold text-[#676a6c] mb-1 flex items-center gap-1">
                 Cliente <HelpCircle className="w-3.5 h-3.5 text-[#888]" />
               </label>
-              <div className="flex">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-0">
                 <select
                   value={form.cliente_id || ''}
                   onChange={(e) => {
@@ -475,36 +563,38 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
                       });
                     }
                   }}
-                  className="w-2/5 border border-r-0 border-[#e5e6e7] rounded-l px-2.5 py-1.5 text-xs bg-[#f9f9f9] text-[#676a6c] focus:outline-none"
+                  className="w-full sm:w-2/5 border sm:border-r-0 border-[#e5e6e7] rounded sm:rounded-r-none px-2.5 py-2 sm:py-1.5 text-xs bg-[#f9f9f9] text-[#676a6c] focus:outline-none"
                 >
-                  <option value="">Buscar na base...</option>
+                  <option value="">Selecionar cliente da base...</option>
                   {clientes.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.nome} - {c.cpf}
                     </option>
                   ))}
                 </select>
-                <input
-                  type="text"
-                  value={form.cliente_nome}
-                  onChange={(e) => setForm({ ...form, cliente_nome: e.target.value })}
-                  placeholder="Pesquisa clientes por nome, apelido, cpf ou rg..."
-                  className="w-3/5 border border-[#e5e6e7] px-3 py-1.5 text-xs text-[#676a6c] focus:outline-none focus:border-[#1ab394]"
-                />
-                <button
-                  type="button"
-                  onClick={onOpenNewClientModal}
-                  className="border border-l-0 border-[#e5e6e7] rounded-r px-3 bg-white hover:bg-[#f3f3f4] text-[#676a6c] font-bold cursor-pointer"
-                  title="Cadastrar Novo Cliente"
-                >
-                  +
-                </button>
+                <div className="flex w-full sm:w-3/5">
+                  <input
+                    type="text"
+                    value={form.cliente_nome}
+                    onChange={(e) => setForm({ ...form, cliente_nome: e.target.value })}
+                    placeholder="Pesquisa clientes por nome, apelido, cpf ou rg..."
+                    className="w-full border border-[#e5e6e7] rounded-l sm:rounded-l-none px-3 py-2 sm:py-1.5 text-xs text-[#676a6c] focus:outline-none focus:border-[#1ab394]"
+                  />
+                  <button
+                    type="button"
+                    onClick={onOpenNewClientModal}
+                    className="border border-l-0 border-[#e5e6e7] rounded-r px-3.5 bg-white hover:bg-[#f3f3f4] text-[#1ab394] font-bold text-sm cursor-pointer"
+                    title="Cadastrar Novo Cliente"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div className="md:col-span-2">
+            <div className="col-span-1 md:col-span-2">
               <label className="block font-bold text-[#676a6c] mb-1">Data Entrega</label>
-              <div className="flex items-center border border-[#e5e6e7] rounded bg-white px-2.5 py-1.5">
+              <div className="flex items-center border border-[#e5e6e7] rounded bg-white px-2.5 py-2 sm:py-1.5">
                 <Calendar className="w-3.5 h-3.5 text-[#888] mr-1.5 shrink-0" />
                 <input
                   type="date"
@@ -515,9 +605,9 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
               </div>
             </div>
 
-            <div className="md:col-span-2">
+            <div className="col-span-1 md:col-span-2">
               <label className="block font-bold text-[#676a6c] mb-1">Hora Entrega</label>
-              <div className="flex items-center border border-[#e5e6e7] rounded bg-white px-2.5 py-1.5">
+              <div className="flex items-center border border-[#e5e6e7] rounded bg-white px-2.5 py-2 sm:py-1.5">
                 <Clock className="w-3.5 h-3.5 text-[#888] mr-1.5 shrink-0" />
                 <input
                   type="time"
@@ -530,14 +620,14 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
           </div>
 
           {/* Linha 4: Origem do cliente | Convênio */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4">
             <div className="md:col-span-6">
               <label className="block font-bold text-[#676a6c] mb-1">Origem do cliente</label>
               <div className="flex">
                 <select
                   value={origemCliente}
                   onChange={(e) => setOrigemCliente(e.target.value)}
-                  className="w-full border border-[#e5e6e7] rounded-l px-3 py-1.5 text-xs bg-white text-[#676a6c] focus:outline-none"
+                  className="w-full border border-[#e5e6e7] rounded-l px-3 py-2 sm:py-1.5 text-xs bg-white text-[#676a6c] focus:outline-none"
                 >
                   <option value="Nenhuma origem informada">Nenhuma origem informada</option>
                   <option value="Indicação / Cliente Antigo">Indicação / Cliente Antigo</option>
@@ -547,7 +637,7 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
                 </select>
                 <button
                   type="button"
-                  className="border border-l-0 border-[#e5e6e7] rounded-r px-3 bg-white hover:bg-[#f3f3f4] text-[#676a6c] font-bold"
+                  className="border border-l-0 border-[#e5e6e7] rounded-r px-3.5 bg-white hover:bg-[#f3f3f4] text-[#676a6c] font-bold"
                 >
                   +
                 </button>
@@ -561,7 +651,7 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
                 value={form.convenio || 'Particular'}
                 onChange={(e) => setForm({ ...form, convenio: e.target.value })}
                 placeholder="Particular ou nome do convênio"
-                className="w-full border border-[#e5e6e7] rounded px-3 py-1.5 text-xs text-[#676a6c] focus:outline-none focus:border-[#1ab394]"
+                className="w-full border border-[#e5e6e7] rounded px-3 py-2 sm:py-1.5 text-xs text-[#676a6c] focus:outline-none focus:border-[#1ab394]"
               />
             </div>
           </div>
@@ -570,7 +660,7 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
           <div>
             <label className="block font-bold text-[#676a6c] mb-1">Observação</label>
             <textarea
-              rows={3}
+              rows={2}
               value={form.observacoes_montagem}
               onChange={(e) => setForm({ ...form, observacoes_montagem: e.target.value })}
               className="w-full border border-[#e5e6e7] rounded p-2.5 text-xs text-[#676a6c] focus:outline-none focus:border-[#1ab394]"
@@ -582,18 +672,23 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
       {/* =====================================================================
           CARD 2: PRODUTOS E SERVIÇOS (Idêntico ao print os_produtos.png do ssOtica)
          ===================================================================== */}
-      <div className="bg-white border border-[#e7eaec] rounded shadow-[0_1px_1px_rgba(0,0,0,0.05)]">
-        <div className="border-b border-[#e7eaec] px-5 py-3 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-[14px] font-semibold text-[#676a6c]">Produtos e Serviços</h2>
-          <div className="flex items-center gap-4 text-xs">
+      <div
+        id="sec-produtos"
+        className="bg-white border border-[#e7eaec] rounded shadow-[0_1px_1px_rgba(0,0,0,0.05)] scroll-mt-16"
+      >
+        <div className="border-b border-[#e7eaec] px-4 sm:px-5 py-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-[13px] sm:text-[14px] font-semibold text-[#676a6c]">
+            Produtos e Serviços
+          </h2>
+          <div className="flex flex-wrap items-center gap-3 text-xs">
             <button
               type="button"
               onClick={onOpenNewProductModal}
-              className="border border-[#e5e6e7] rounded px-3 py-1 bg-white hover:bg-[#f3f3f4] text-[#676a6c] font-semibold cursor-pointer"
+              className="border border-[#e5e6e7] rounded px-3 py-1.5 sm:py-1 bg-white hover:bg-[#f3f3f4] text-[#0E9AEF] font-semibold cursor-pointer"
             >
               + Cadastrar novo produto
             </button>
-            <label className="flex items-center gap-1.5 text-[#676a6c] cursor-pointer">
+            <label className="hidden sm:flex items-center gap-1.5 text-[#676a6c] cursor-pointer">
               <input
                 type="checkbox"
                 checked={usandoLeitorBarras}
@@ -605,9 +700,9 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
           </div>
         </div>
 
-        <div className="p-5 space-y-4 text-xs">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-            <div className="md:col-span-6 flex items-center border border-[#e5e6e7] rounded bg-white px-2.5 py-1.5 focus-within:border-[#1ab394]">
+        <div className="p-3.5 sm:p-5 space-y-4 text-xs">
+          <div className="grid grid-cols-2 md:grid-cols-12 gap-2.5 sm:gap-3 items-center">
+            <div className="col-span-2 md:col-span-6 flex items-center border border-[#e5e6e7] rounded bg-white px-2.5 py-2 sm:py-1.5 focus-within:border-[#1ab394]">
               <Search className="w-4 h-4 text-[#888] mr-2 shrink-0" />
               <select
                 value={produtoSelecionadoId}
@@ -632,7 +727,7 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
               </select>
             </div>
 
-            <div className="md:col-span-2 flex items-center border border-[#e5e6e7] rounded bg-white px-2.5 py-1.5">
+            <div className="col-span-1 md:col-span-2 flex items-center border border-[#e5e6e7] rounded bg-white px-2.5 py-2 sm:py-1.5">
               <Plus className="w-3.5 h-3.5 text-[#676a6c] mr-2" />
               <input
                 type="number"
@@ -643,7 +738,7 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
               />
             </div>
 
-            <div className="md:col-span-2 flex items-center border border-[#e5e6e7] rounded bg-white px-2.5 py-1.5">
+            <div className="col-span-1 md:col-span-2 flex items-center border border-[#e5e6e7] rounded bg-white px-2.5 py-2 sm:py-1.5">
               <span className="text-[#676a6c] font-bold mr-2">$</span>
               <input
                 type="number"
@@ -655,11 +750,11 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
               />
             </div>
 
-            <div className="md:col-span-2">
+            <div className="col-span-2 md:col-span-2">
               <button
                 type="button"
                 onClick={handleIncluirProduto}
-                className="w-full flex items-center justify-center gap-1.5 border border-[#e5e6e7] rounded py-1.5 px-3 bg-white hover:bg-[#f3f3f4] text-[#676a6c] font-semibold cursor-pointer"
+                className="w-full flex items-center justify-center gap-1.5 border border-[#1ab394] sm:border-[#e5e6e7] rounded py-2 sm:py-1.5 px-3 bg-[#1ab394] sm:bg-white text-white sm:text-[#676a6c] hover:bg-[#18a689] sm:hover:bg-[#f3f3f4] font-bold sm:font-semibold cursor-pointer"
               >
                 <ShoppingCart className="w-3.5 h-3.5" />
                 incluir item
@@ -667,8 +762,76 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
             </div>
           </div>
 
-          {/* Tabela de Itens da O.S. */}
-          <div className="overflow-x-auto">
+          {/* MODO CELULAR (CARDS DE ITENS) - Visível apenas no Celular (<768px) */}
+          <div className="md:hidden space-y-2.5">
+            {itensOS.map((item) => {
+              const valTot = item.qtde * item.valorUnit + item.acreDesc;
+              return (
+                <div
+                  key={item.id}
+                  className="border border-[#e7eaec] rounded-lg p-3 bg-[#fafafa] space-y-2"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <span className="text-[10px] font-mono bg-[#e7f4fd] text-[#0E9AEF] px-1.5 py-0.5 rounded font-bold">
+                        {item.referencia} • {item.unidade}
+                      </span>
+                      <p className="font-bold text-[#2f4050] mt-1">{item.descricao}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setItensOS((prev) => prev.filter((i) => i.id !== item.id))
+                      }
+                      className="p-1.5 text-red-500 hover:bg-red-50 rounded cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#e7eaec] items-center">
+                    <div>
+                      <span className="text-[10px] text-[#888] block">Qtde x Unit.</span>
+                      <span className="font-semibold">
+                        {item.qtde}x R$ {item.valorUnit.toFixed(2)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-[#888] block">Desc / Acrésc</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={item.acreDesc}
+                        onChange={(e) => {
+                          const v = parseFloat(e.target.value) || 0;
+                          setItensOS((prev) =>
+                            prev.map((i) => (i.id === item.id ? { ...i, acreDesc: v } : i))
+                          );
+                        }}
+                        className="w-full border border-[#e5e6e7] bg-white rounded px-2 py-1 text-xs font-mono"
+                      />
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[10px] text-[#888] block">Subtotal</span>
+                      <strong className="text-sm text-[#1ab394]">
+                        R$ {valTot.toFixed(2)}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            <div className="bg-[#f3f8fb] border border-[#b6e0fe] rounded-lg p-3 flex items-center justify-between">
+              <span className="font-bold text-[#2f4050]">Total Líquido da O.S.:</span>
+              <strong className="text-base text-[#1ab394]">
+                R$ {form.valor_total.toFixed(2)}
+              </strong>
+            </div>
+          </div>
+
+          {/* MODO DESKTOP (TABELA PADRÃO SSOTICA) */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="border-b border-[#e7eaec] text-[#676a6c] font-bold">
@@ -742,18 +905,21 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
       {/* =====================================================================
           CARD 3: INFORMAÇÕES DE ADIANTAMENTO (SINAL) (Idêntico ao print os_recebimentos.png)
          ===================================================================== */}
-      <div className="bg-white border border-[#e7eaec] rounded shadow-[0_1px_1px_rgba(0,0,0,0.05)]">
-        <div className="border-b border-[#e7eaec] px-5 py-3">
-          <h2 className="text-[14px] font-semibold text-[#676a6c]">
+      <div
+        id="sec-sinal"
+        className="bg-white border border-[#e7eaec] rounded shadow-[0_1px_1px_rgba(0,0,0,0.05)] scroll-mt-16"
+      >
+        <div className="border-b border-[#e7eaec] px-4 sm:px-5 py-3">
+          <h2 className="text-[13px] sm:text-[14px] font-semibold text-[#676a6c]">
             Informações de Adiantamento <span className="font-normal text-[#888]">(Sinal)</span>
           </h2>
         </div>
 
-        <div className="p-5 space-y-4 text-xs">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-            <div className="md:col-span-4">
+        <div className="p-3.5 sm:p-5 space-y-4 text-xs">
+          <div className="grid grid-cols-2 md:grid-cols-12 gap-3 sm:gap-4">
+            <div className="col-span-2 md:col-span-4">
               <label className="block font-bold text-[#676a6c] mb-1">Forma de Pagamento</label>
-              <div className="flex items-center border border-[#e5e6e7] rounded bg-white px-2.5 py-1.5">
+              <div className="flex items-center border border-[#e5e6e7] rounded bg-white px-2.5 py-2 sm:py-1.5">
                 <CreditCard className="w-4 h-4 text-[#888] mr-2 shrink-0" />
                 <select
                   value={formaAdiantamento}
@@ -768,9 +934,9 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
               </div>
             </div>
 
-            <div className="md:col-span-2">
+            <div className="col-span-1 md:col-span-2">
               <label className="block font-bold text-[#676a6c] mb-1">Valor</label>
-              <div className="flex items-center border border-[#e5e6e7] rounded bg-white px-2.5 py-1.5">
+              <div className="flex items-center border border-[#e5e6e7] rounded bg-white px-2.5 py-2 sm:py-1.5">
                 <span className="text-[#676a6c] font-bold mr-2">$</span>
                 <input
                   type="number"
@@ -783,9 +949,9 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
               </div>
             </div>
 
-            <div className="md:col-span-3">
+            <div className="col-span-1 md:col-span-3">
               <label className="block font-bold text-[#676a6c] mb-1">Data Lançam. Caixa</label>
-              <div className="flex items-center border border-[#e5e6e7] rounded bg-white px-2.5 py-1.5">
+              <div className="flex items-center border border-[#e5e6e7] rounded bg-white px-2.5 py-2 sm:py-1.5">
                 <Calendar className="w-3.5 h-3.5 text-[#888] mr-2 shrink-0" />
                 <input
                   type="date"
@@ -796,7 +962,7 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
               </div>
             </div>
 
-            <div className="md:col-span-3">
+            <div className="col-span-1 md:col-span-3">
               <label className="block font-bold text-[#676a6c] mb-1">Qtde Parcelas</label>
               <input
                 type="number"
@@ -804,13 +970,23 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
                 max={12}
                 value={qtdeParcelasSinal}
                 onChange={(e) => setQtdeParcelasSinal(parseInt(e.target.value, 10) || 1)}
-                className="w-full border border-[#e5e6e7] rounded bg-[#eee] px-3 py-1.5 text-xs text-[#676a6c] focus:outline-none"
+                className="w-full border border-[#e5e6e7] rounded bg-[#eee] px-3 py-2 sm:py-1.5 text-xs text-[#676a6c] focus:outline-none"
+              />
+            </div>
+
+            <div className="col-span-1 md:hidden">
+              <label className="block font-bold text-[#676a6c] mb-1">Cód. Autorização</label>
+              <input
+                type="text"
+                value={codAutorizacao}
+                onChange={(e) => setCodAutorizacao(e.target.value)}
+                className="w-full border border-[#e5e6e7] rounded bg-[#eee] px-3 py-2 text-xs text-[#676a6c] focus:outline-none"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-            <div className="md:col-span-2">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4 items-end">
+            <div className="hidden md:block md:col-span-2">
               <label className="block font-bold text-[#676a6c] mb-1">Código de Autorização</label>
               <input
                 type="text"
@@ -824,37 +1000,36 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
               <button
                 type="button"
                 onClick={handleRegistrarAdiantamento}
-                className="w-full flex items-center justify-center gap-1.5 border border-[#e5e6e7] rounded py-1.5 px-4 bg-white hover:bg-[#f3f3f4] text-[#676a6c] font-semibold cursor-pointer"
+                className="w-full flex items-center justify-center gap-1.5 border border-[#e5e6e7] rounded py-2 sm:py-1.5 px-4 bg-white hover:bg-[#f3f3f4] text-[#676a6c] font-semibold cursor-pointer"
               >
-                <Banknote className="w-4 h-4" />
-                Registrar
+                <Banknote className="w-4 h-4 text-[#1ab394]" />
+                Registrar Adiantamento (Sinal)
               </button>
             </div>
 
-            <div className="md:col-span-5 text-right">
-              <span className="text-xs text-[#676a6c] mr-4">
-                Adiantamento Pago:{' '}
+            <div className="md:col-span-5 flex flex-wrap items-center justify-between md:justify-end gap-3 bg-[#f9f9f9] md:bg-transparent p-2.5 md:p-0 rounded">
+              <span className="text-xs text-[#676a6c]">
+                Sinal Pago:{' '}
                 <strong className="text-[#1ab394]">R$ {form.valor_entrada.toFixed(2)}</strong>
               </span>
               <span className="text-xs text-[#676a6c]">
-                Falta Receber na Entrega:{' '}
+                Falta Receber:{' '}
                 <strong className="text-[#ed5565]">R$ {form.valor_restante.toFixed(2)}</strong>
               </span>
             </div>
           </div>
 
           {adiantamentos.length > 0 && (
-            <div className="pt-2 border-t border-[#e7eaec]">
+            <div className="pt-2 border-t border-[#e7eaec] space-y-1.5">
               {adiantamentos.map((adt) => (
                 <div
                   key={adt.id}
-                  className="flex items-center justify-between py-1.5 px-3 bg-[#f9f9f9] rounded mb-1"
+                  className="flex items-center justify-between py-2 px-3 bg-[#f9f9f9] rounded text-xs"
                 >
-                  <span>
-                    <strong>{adt.forma}</strong> ({adt.parcelas}x) — Lançado em {adt.data} •{' '}
-                    {adt.observacao}
+                  <span className="truncate pr-2">
+                    <strong>{adt.forma}</strong> ({adt.parcelas}x) — {adt.data} • {adt.observacao}
                   </span>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 shrink-0">
                     <strong className="text-[#1ab394]">R$ {adt.valor.toFixed(2)}</strong>
                     <button
                       type="button"
@@ -876,28 +1051,62 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
       {/* =====================================================================
           CARD 4: DADOS DA RECEITA (Idêntico ao print os_receita.png do ssOtica!)
          ===================================================================== */}
-      <div className="bg-white border border-[#e7eaec] rounded shadow-[0_1px_1px_rgba(0,0,0,0.05)]">
-        <div className="border-b border-[#e7eaec] px-5 py-3">
-          <h2 className="text-[14px] font-semibold text-[#676a6c]">Dados da Receita</h2>
+      <div
+        id="sec-receita"
+        className="bg-white border border-[#e7eaec] rounded shadow-[0_1px_1px_rgba(0,0,0,0.05)] scroll-mt-16"
+      >
+        <div className="border-b border-[#e7eaec] px-4 sm:px-5 py-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-[13px] sm:text-[14px] font-semibold text-[#676a6c]">
+            Dados da Receita
+          </h2>
+
+          {/* Seletor de visualização para Celular */}
+          <div className="flex md:hidden items-center bg-[#f3f3f4] p-0.5 rounded border border-[#e5e6e7] text-[11px]">
+            <button
+              type="button"
+              onClick={() => setModoReceitaMobile('tabela')}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded font-semibold cursor-pointer ${
+                modoReceitaMobile === 'tabela'
+                  ? 'bg-white text-[#2f4050] shadow-sm'
+                  : 'text-[#676a6c]'
+              }`}
+            >
+              <Table2 className="w-3 h-3" />
+              Grade ssOtica
+            </button>
+            <button
+              type="button"
+              onClick={() => setModoReceitaMobile('cards')}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded font-semibold cursor-pointer ${
+                modoReceitaMobile === 'cards'
+                  ? 'bg-white text-[#0E9AEF] shadow-sm'
+                  : 'text-[#676a6c]'
+              }`}
+            >
+              <Smartphone className="w-3 h-3" />
+              Modo Celular
+            </button>
+          </div>
         </div>
 
-        <div className="p-5 space-y-4 text-xs">
-          <p className="text-[13px] text-[#676a6c]">
-            Selecione uma das receitas mais recentes do cliente listadas abaixo ou então cadastre uma nova.
+        <div className="p-3.5 sm:p-5 space-y-4 text-xs">
+          <p className="text-xs sm:text-[13px] text-[#676a6c]">
+            Selecione uma das receitas mais recentes do cliente listadas abaixo ou então cadastre
+            uma nova.
           </p>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 border border-[#e7eaec] rounded">
             {/* Coluna Esquerda: Aba Nova Receita e Histórico de Receitas do Cliente */}
-            <div className="lg:col-span-3 bg-[#f9f9f9] border-r border-[#e7eaec] p-3 space-y-2">
-              <div className="flex items-center gap-2 font-bold text-[#676a6c] px-2 py-1.5">
+            <div className="lg:col-span-3 bg-[#f9f9f9] border-b lg:border-b-0 lg:border-r border-[#e7eaec] p-3 flex lg:flex-col items-center lg:items-stretch justify-between gap-2">
+              <div className="flex items-center gap-2 font-bold text-[#676a6c] px-2 py-1">
                 <span>⊞</span> Nova Receita
               </div>
-              <div className="bg-white border border-[#e7eaec] rounded p-3 shadow-sm cursor-pointer">
+              <div className="bg-white border border-[#e7eaec] rounded px-3 py-2 sm:p-3 shadow-sm cursor-pointer">
                 <div className="flex items-center gap-1.5 text-[#676a6c] font-semibold">
                   <Calendar className="w-3.5 h-3.5 text-[#888]" />
                   <span>{form.data_receita} 14:07</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-[#888] mt-1">
+                <div className="hidden sm:flex items-center gap-1.5 text-[#888] mt-1">
                   <Clock className="w-3.5 h-3.5" />
                   <span>Val: {validadeReceita}</span>
                 </div>
@@ -905,14 +1114,14 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
             </div>
 
             {/* Coluna Direita: Profissional Responsável + Grade LONGE (Azul) e PERTO (Vermelho) */}
-            <div className="lg:col-span-9 p-5 space-y-5 bg-white">
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+            <div className="lg:col-span-9 p-3.5 sm:p-5 space-y-4 sm:space-y-5 bg-white">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4">
                 <div className="md:col-span-8">
                   <label className="block font-bold text-[#676a6c] mb-1">
                     Profissional Responsável
                   </label>
                   <div className="flex">
-                    <div className="flex items-center border border-[#e5e6e7] rounded-l bg-white px-2.5 py-1.5 w-full">
+                    <div className="flex items-center border border-[#e5e6e7] rounded-l bg-white px-2.5 py-2 sm:py-1.5 w-full">
                       <User className="w-4 h-4 text-[#888] mr-2 shrink-0" />
                       <input
                         type="text"
@@ -926,7 +1135,7 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
                     </div>
                     <button
                       type="button"
-                      className="border border-l-0 border-[#e5e6e7] rounded-r px-3 bg-white hover:bg-[#f3f3f4] text-[#676a6c] font-bold"
+                      className="border border-l-0 border-[#e5e6e7] rounded-r px-3.5 bg-white hover:bg-[#f3f3f4] text-[#676a6c] font-bold"
                     >
                       +
                     </button>
@@ -939,7 +1148,7 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
 
                 <div className="md:col-span-4">
                   <label className="block font-bold text-[#676a6c] mb-1">Receita Válida Até</label>
-                  <div className="flex items-center border border-[#e5e6e7] rounded bg-white px-2.5 py-1.5">
+                  <div className="flex items-center border border-[#e5e6e7] rounded bg-white px-2.5 py-2 sm:py-1.5">
                     <Calendar className="w-3.5 h-3.5 text-[#888] mr-2 shrink-0" />
                     <input
                       type="date"
@@ -951,26 +1160,220 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
                 </div>
               </div>
 
+              {/* OPÇÃO 1: MODO CARDS PARA CELULAR (Quando o usuário clica em "Modo Celular") */}
+              {modoReceitaMobile === 'cards' && (
+                <div className="md:hidden space-y-3">
+                  {/* Card LONGE (Azul) */}
+                  <div className="border-2 border-[#1c84c6] rounded-lg overflow-hidden">
+                    <div className="bg-[#1c84c6] text-white px-3 py-1.5 font-bold flex items-center justify-between">
+                      <span>VISÃO DE LONGE</span>
+                      <span className="text-[10px] opacity-90">OD (Direito) e OE (Esquerdo)</span>
+                    </div>
+                    <div className="p-3 space-y-3 bg-[#f3f8fb]">
+                      {/* OD */}
+                      <div className="bg-white p-2.5 rounded border border-[#e7eaec] space-y-2">
+                        <div className="font-bold text-[#1c84c6] flex items-center gap-1.5">
+                          <Eye className="w-4 h-4" /> Olho Direito (OD) - Longe
+                        </div>
+                        <div className="grid grid-cols-5 gap-1.5 text-center">
+                          <div>
+                            <span className="text-[10px] font-bold block">Esférico</span>
+                            <input
+                              type="text"
+                              value={form.longe_od_esf}
+                              onChange={(e) =>
+                                setForm({ ...form, longe_od_esf: e.target.value })
+                              }
+                              className="w-full border border-[#e5e6e7] rounded py-1.5 text-center font-mono font-bold"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-bold block">Cilíndrico</span>
+                            <input
+                              type="text"
+                              value={form.longe_od_cil}
+                              onChange={(e) =>
+                                setForm({ ...form, longe_od_cil: e.target.value })
+                              }
+                              className="w-full border border-[#e5e6e7] rounded py-1.5 text-center font-mono font-bold"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-bold block">Eixo</span>
+                            <input
+                              type="text"
+                              value={form.longe_od_eixo}
+                              onChange={(e) =>
+                                setForm({ ...form, longe_od_eixo: e.target.value })
+                              }
+                              className="w-full border border-[#e5e6e7] rounded py-1.5 text-center font-mono"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-bold block">Altura</span>
+                            <input
+                              type="text"
+                              value={form.longe_od_altura}
+                              onChange={(e) =>
+                                setForm({ ...form, longe_od_altura: e.target.value })
+                              }
+                              className="w-full border border-[#e5e6e7] rounded py-1.5 text-center font-mono"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-bold block">DNP</span>
+                            <input
+                              type="text"
+                              value={form.longe_od_dnp}
+                              onChange={(e) =>
+                                setForm({ ...form, longe_od_dnp: e.target.value })
+                              }
+                              className="w-full border border-[#e5e6e7] rounded py-1.5 text-center font-mono"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* OE */}
+                      <div className="bg-white p-2.5 rounded border border-[#e7eaec] space-y-2">
+                        <div className="font-bold text-[#1c84c6] flex items-center gap-1.5">
+                          <Eye className="w-4 h-4" /> Olho Esquerdo (OE) - Longe
+                        </div>
+                        <div className="grid grid-cols-5 gap-1.5 text-center">
+                          <div>
+                            <span className="text-[10px] font-bold block">Esférico</span>
+                            <input
+                              type="text"
+                              value={form.longe_oe_esf}
+                              onChange={(e) =>
+                                setForm({ ...form, longe_oe_esf: e.target.value })
+                              }
+                              className="w-full border border-[#e5e6e7] rounded py-1.5 text-center font-mono font-bold"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-bold block">Cilíndrico</span>
+                            <input
+                              type="text"
+                              value={form.longe_oe_cil}
+                              onChange={(e) =>
+                                setForm({ ...form, longe_oe_cil: e.target.value })
+                              }
+                              className="w-full border border-[#e5e6e7] rounded py-1.5 text-center font-mono font-bold"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-bold block">Eixo</span>
+                            <input
+                              type="text"
+                              value={form.longe_oe_eixo}
+                              onChange={(e) =>
+                                setForm({ ...form, longe_oe_eixo: e.target.value })
+                              }
+                              className="w-full border border-[#e5e6e7] rounded py-1.5 text-center font-mono"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-bold block">Altura</span>
+                            <input
+                              type="text"
+                              value={form.longe_oe_altura}
+                              onChange={(e) =>
+                                setForm({ ...form, longe_oe_altura: e.target.value })
+                              }
+                              className="w-full border border-[#e5e6e7] rounded py-1.5 text-center font-mono"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-bold block">DNP</span>
+                            <input
+                              type="text"
+                              value={form.longe_oe_dnp}
+                              onChange={(e) =>
+                                setForm({ ...form, longe_oe_dnp: e.target.value })
+                              }
+                              className="w-full border border-[#e5e6e7] rounded py-1.5 text-center font-mono"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Adição + Perto (Vermelho) */}
+                  <div className="border-2 border-[#ed5565] rounded-lg overflow-hidden">
+                    <div className="bg-[#ed5565] text-white px-3 py-1.5 font-bold flex items-center justify-between">
+                      <span>VISÃO DE PERTO & ADIÇÃO</span>
+                      <span className="text-[10px]">Cálculo Automático</span>
+                    </div>
+                    <div className="p-3 space-y-2.5 bg-[#fcf4f5]">
+                      <div className="flex items-center justify-between bg-white p-2.5 rounded border border-[#e7eaec]">
+                        <span className="font-bold text-[#676a6c]">Adição (Para Perto):</span>
+                        <input
+                          type="text"
+                          value={form.adicao_od}
+                          onChange={(e) => handleAdicaoChange(e.target.value)}
+                          placeholder="+2.00"
+                          className="w-28 border border-[#1ab394] rounded py-1 px-2 text-center font-mono font-bold"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-center bg-white p-2.5 rounded border border-[#e7eaec]">
+                        <div>
+                          <span className="text-[10px] font-bold text-[#ed5565] block">
+                            PERTO OD (Esf)
+                          </span>
+                          <input
+                            type="text"
+                            value={form.perto_od_esf}
+                            onChange={(e) =>
+                              setForm({ ...form, perto_od_esf: e.target.value })
+                            }
+                            className="w-full border border-[#e5e6e7] rounded py-1 text-center font-mono font-bold mt-1"
+                          />
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-bold text-[#ed5565] block">
+                            PERTO OE (Esf)
+                          </span>
+                          <input
+                            type="text"
+                            value={form.perto_oe_esf}
+                            onChange={(e) =>
+                              setForm({ ...form, perto_oe_esf: e.target.value })
+                            }
+                            className="w-full border border-[#e5e6e7] rounded py-1 text-center font-mono font-bold mt-1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* GRADE EXATA DO SSOTICA: LONGE (AZUL) / PERTO (VERMELHO) / ADIÇÃO */}
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-xs">
+              <div
+                className={`${
+                  modoReceitaMobile === 'cards' ? 'hidden md:block' : 'block'
+                } overflow-x-auto -mx-1 px-1`}
+              >
+                <table className="w-full min-w-[540px] border-collapse text-xs">
                   <thead>
                     <tr>
-                      <th className="w-12"></th>
-                      <th className="w-28"></th>
-                      <th className="border border-[#e7eaec] bg-[#f5f5f6] py-2 px-3 text-center font-bold text-[#676a6c]">
+                      <th className="w-9 sm:w-12"></th>
+                      <th className="w-20 sm:w-28"></th>
+                      <th className="border border-[#e7eaec] bg-[#f5f5f6] py-2 px-2 sm:px-3 text-center font-bold text-[#676a6c]">
                         Esférico
                       </th>
-                      <th className="border border-[#e7eaec] bg-[#f5f5f6] py-2 px-3 text-center font-bold text-[#676a6c]">
+                      <th className="border border-[#e7eaec] bg-[#f5f5f6] py-2 px-2 sm:px-3 text-center font-bold text-[#676a6c]">
                         Cilíndrico
                       </th>
-                      <th className="border border-[#e7eaec] bg-[#f5f5f6] py-2 px-3 text-center font-bold text-[#676a6c]">
+                      <th className="border border-[#e7eaec] bg-[#f5f5f6] py-2 px-2 sm:px-3 text-center font-bold text-[#676a6c]">
                         Eixo
                       </th>
-                      <th className="border border-[#e7eaec] bg-[#f5f5f6] py-2 px-3 text-center font-bold text-[#676a6c]">
+                      <th className="border border-[#e7eaec] bg-[#f5f5f6] py-2 px-2 sm:px-3 text-center font-bold text-[#676a6c]">
                         Altura
                       </th>
-                      <th className="border border-[#e7eaec] bg-[#f5f5f6] py-2 px-3 text-center font-bold text-[#676a6c]">
+                      <th className="border border-[#e7eaec] bg-[#f5f5f6] py-2 px-2 sm:px-3 text-center font-bold text-[#676a6c]">
                         DNP
                       </th>
                     </tr>
@@ -985,98 +1388,98 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
                       >
                         LONGE
                       </td>
-                      <td className="border border-[#e7eaec] bg-[#f9f9f9] py-2.5 px-3 text-center font-semibold text-[#1c84c6]">
-                        <span className="inline-flex items-center gap-1.5">
-                          <Eye className="w-4 h-4 text-[#1c84c6]" /> OD
+                      <td className="border border-[#e7eaec] bg-[#f9f9f9] py-2.5 px-2 sm:px-3 text-center font-semibold text-[#1c84c6]">
+                        <span className="inline-flex items-center gap-1">
+                          <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#1c84c6]" /> OD
                         </span>
                       </td>
-                      <td className="border border-[#e7eaec] p-2">
+                      <td className="border border-[#e7eaec] p-1.5 sm:p-2">
                         <input
                           type="text"
                           value={form.longe_od_esf}
                           onChange={(e) => setForm({ ...form, longe_od_esf: e.target.value })}
-                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-2 text-center font-mono focus:outline-none focus:border-[#1c84c6]"
+                          className="w-full min-w-[62px] border border-[#e5e6e7] rounded py-1.5 px-1.5 text-center font-mono focus:outline-none focus:border-[#1c84c6]"
                         />
                       </td>
-                      <td className="border border-[#e7eaec] p-2">
+                      <td className="border border-[#e7eaec] p-1.5 sm:p-2">
                         <input
                           type="text"
                           value={form.longe_od_cil}
                           onChange={(e) => setForm({ ...form, longe_od_cil: e.target.value })}
-                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-2 text-center font-mono focus:outline-none focus:border-[#1c84c6]"
+                          className="w-full min-w-[62px] border border-[#e5e6e7] rounded py-1.5 px-1.5 text-center font-mono focus:outline-none focus:border-[#1c84c6]"
                         />
                       </td>
-                      <td className="border border-[#e7eaec] p-2">
+                      <td className="border border-[#e7eaec] p-1.5 sm:p-2">
                         <input
                           type="text"
                           value={form.longe_od_eixo}
                           onChange={(e) => setForm({ ...form, longe_od_eixo: e.target.value })}
-                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-2 text-center font-mono focus:outline-none focus:border-[#1c84c6]"
+                          className="w-full min-w-[54px] border border-[#e5e6e7] rounded py-1.5 px-1.5 text-center font-mono focus:outline-none focus:border-[#1c84c6]"
                         />
                       </td>
-                      <td className="border border-[#e7eaec] p-2">
+                      <td className="border border-[#e7eaec] p-1.5 sm:p-2">
                         <input
                           type="text"
                           value={form.longe_od_altura}
                           onChange={(e) => setForm({ ...form, longe_od_altura: e.target.value })}
-                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-2 text-center font-mono focus:outline-none focus:border-[#1c84c6]"
+                          className="w-full min-w-[54px] border border-[#e5e6e7] rounded py-1.5 px-1.5 text-center font-mono focus:outline-none focus:border-[#1c84c6]"
                         />
                       </td>
-                      <td className="border border-[#e7eaec] p-2">
+                      <td className="border border-[#e7eaec] p-1.5 sm:p-2">
                         <input
                           type="text"
                           value={form.longe_od_dnp}
                           onChange={(e) => setForm({ ...form, longe_od_dnp: e.target.value })}
-                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-2 text-center font-mono focus:outline-none focus:border-[#1c84c6]"
+                          className="w-full min-w-[54px] border border-[#e5e6e7] rounded py-1.5 px-1.5 text-center font-mono focus:outline-none focus:border-[#1c84c6]"
                         />
                       </td>
                     </tr>
 
                     {/* LONGE OE */}
                     <tr>
-                      <td className="border border-[#e7eaec] bg-[#f9f9f9] py-2.5 px-3 text-center font-semibold text-[#1c84c6]">
-                        <span className="inline-flex items-center gap-1.5">
-                          <Eye className="w-4 h-4 text-[#1c84c6]" /> OE
+                      <td className="border border-[#e7eaec] bg-[#f9f9f9] py-2.5 px-2 sm:px-3 text-center font-semibold text-[#1c84c6]">
+                        <span className="inline-flex items-center gap-1">
+                          <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#1c84c6]" /> OE
                         </span>
                       </td>
-                      <td className="border border-[#e7eaec] p-2">
+                      <td className="border border-[#e7eaec] p-1.5 sm:p-2">
                         <input
                           type="text"
                           value={form.longe_oe_esf}
                           onChange={(e) => setForm({ ...form, longe_oe_esf: e.target.value })}
-                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-2 text-center font-mono focus:outline-none focus:border-[#1c84c6]"
+                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-1.5 text-center font-mono focus:outline-none focus:border-[#1c84c6]"
                         />
                       </td>
-                      <td className="border border-[#e7eaec] p-2">
+                      <td className="border border-[#e7eaec] p-1.5 sm:p-2">
                         <input
                           type="text"
                           value={form.longe_oe_cil}
                           onChange={(e) => setForm({ ...form, longe_oe_cil: e.target.value })}
-                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-2 text-center font-mono focus:outline-none focus:border-[#1c84c6]"
+                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-1.5 text-center font-mono focus:outline-none focus:border-[#1c84c6]"
                         />
                       </td>
-                      <td className="border border-[#e7eaec] p-2">
+                      <td className="border border-[#e7eaec] p-1.5 sm:p-2">
                         <input
                           type="text"
                           value={form.longe_oe_eixo}
                           onChange={(e) => setForm({ ...form, longe_oe_eixo: e.target.value })}
-                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-2 text-center font-mono focus:outline-none focus:border-[#1c84c6]"
+                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-1.5 text-center font-mono focus:outline-none focus:border-[#1c84c6]"
                         />
                       </td>
-                      <td className="border border-[#e7eaec] p-2">
+                      <td className="border border-[#e7eaec] p-1.5 sm:p-2">
                         <input
                           type="text"
                           value={form.longe_oe_altura}
                           onChange={(e) => setForm({ ...form, longe_oe_altura: e.target.value })}
-                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-2 text-center font-mono focus:outline-none focus:border-[#1c84c6]"
+                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-1.5 text-center font-mono focus:outline-none focus:border-[#1c84c6]"
                         />
                       </td>
-                      <td className="border border-[#e7eaec] p-2">
+                      <td className="border border-[#e7eaec] p-1.5 sm:p-2">
                         <input
                           type="text"
                           value={form.longe_oe_dnp}
                           onChange={(e) => setForm({ ...form, longe_oe_dnp: e.target.value })}
-                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-2 text-center font-mono focus:outline-none focus:border-[#1c84c6]"
+                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-1.5 text-center font-mono focus:outline-none focus:border-[#1c84c6]"
                         />
                       </td>
                     </tr>
@@ -1090,96 +1493,96 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
                       >
                         PERTO
                       </td>
-                      <td className="border border-[#e7eaec] bg-[#f9f9f9] py-2.5 px-3 text-center font-semibold text-[#ed5565]">
-                        <span className="inline-flex items-center gap-1.5">
-                          <Eye className="w-4 h-4 text-[#ed5565]" /> OD
+                      <td className="border border-[#e7eaec] bg-[#f9f9f9] py-2.5 px-2 sm:px-3 text-center font-semibold text-[#ed5565]">
+                        <span className="inline-flex items-center gap-1">
+                          <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#ed5565]" /> OD
                         </span>
                       </td>
-                      <td className="border border-[#e7eaec] p-2">
+                      <td className="border border-[#e7eaec] p-1.5 sm:p-2">
                         <input
                           type="text"
                           value={form.perto_od_esf}
                           onChange={(e) => setForm({ ...form, perto_od_esf: e.target.value })}
-                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-2 text-center font-mono focus:outline-none focus:border-[#ed5565]"
+                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-1.5 text-center font-mono focus:outline-none focus:border-[#ed5565]"
                         />
                       </td>
-                      <td className="border border-[#e7eaec] p-2">
+                      <td className="border border-[#e7eaec] p-1.5 sm:p-2">
                         <input
                           type="text"
                           value={form.perto_od_cil}
                           onChange={(e) => setForm({ ...form, perto_od_cil: e.target.value })}
-                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-2 text-center font-mono focus:outline-none focus:border-[#ed5565]"
+                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-1.5 text-center font-mono focus:outline-none focus:border-[#ed5565]"
                         />
                       </td>
-                      <td className="border border-[#e7eaec] p-2">
+                      <td className="border border-[#e7eaec] p-1.5 sm:p-2">
                         <input
                           type="text"
                           value={form.perto_od_eixo}
                           onChange={(e) => setForm({ ...form, perto_od_eixo: e.target.value })}
-                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-2 text-center font-mono focus:outline-none focus:border-[#ed5565]"
+                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-1.5 text-center font-mono focus:outline-none focus:border-[#ed5565]"
                         />
                       </td>
-                      <td className="border border-[#e7eaec] p-2">
+                      <td className="border border-[#e7eaec] p-1.5 sm:p-2">
                         <input
                           type="text"
                           placeholder=""
-                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-2 text-center font-mono focus:outline-none"
+                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-1.5 text-center font-mono focus:outline-none"
                         />
                       </td>
-                      <td className="border border-[#e7eaec] p-2">
+                      <td className="border border-[#e7eaec] p-1.5 sm:p-2">
                         <input
                           type="text"
                           value={form.perto_od_dnp}
                           onChange={(e) => setForm({ ...form, perto_od_dnp: e.target.value })}
-                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-2 text-center font-mono focus:outline-none focus:border-[#ed5565]"
+                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-1.5 text-center font-mono focus:outline-none focus:border-[#ed5565]"
                         />
                       </td>
                     </tr>
 
                     {/* PERTO OE */}
                     <tr>
-                      <td className="border border-[#e7eaec] bg-[#f9f9f9] py-2.5 px-3 text-center font-semibold text-[#ed5565]">
-                        <span className="inline-flex items-center gap-1.5">
-                          <Eye className="w-4 h-4 text-[#ed5565]" /> OE
+                      <td className="border border-[#e7eaec] bg-[#f9f9f9] py-2.5 px-2 sm:px-3 text-center font-semibold text-[#ed5565]">
+                        <span className="inline-flex items-center gap-1">
+                          <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#ed5565]" /> OE
                         </span>
                       </td>
-                      <td className="border border-[#e7eaec] p-2">
+                      <td className="border border-[#e7eaec] p-1.5 sm:p-2">
                         <input
                           type="text"
                           value={form.perto_oe_esf}
                           onChange={(e) => setForm({ ...form, perto_oe_esf: e.target.value })}
-                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-2 text-center font-mono focus:outline-none focus:border-[#ed5565]"
+                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-1.5 text-center font-mono focus:outline-none focus:border-[#ed5565]"
                         />
                       </td>
-                      <td className="border border-[#e7eaec] p-2">
+                      <td className="border border-[#e7eaec] p-1.5 sm:p-2">
                         <input
                           type="text"
                           value={form.perto_oe_cil}
                           onChange={(e) => setForm({ ...form, perto_oe_cil: e.target.value })}
-                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-2 text-center font-mono focus:outline-none focus:border-[#ed5565]"
+                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-1.5 text-center font-mono focus:outline-none focus:border-[#ed5565]"
                         />
                       </td>
-                      <td className="border border-[#e7eaec] p-2">
+                      <td className="border border-[#e7eaec] p-1.5 sm:p-2">
                         <input
                           type="text"
                           value={form.perto_oe_eixo}
                           onChange={(e) => setForm({ ...form, perto_oe_eixo: e.target.value })}
-                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-2 text-center font-mono focus:outline-none focus:border-[#ed5565]"
+                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-1.5 text-center font-mono focus:outline-none focus:border-[#ed5565]"
                         />
                       </td>
-                      <td className="border border-[#e7eaec] p-2">
+                      <td className="border border-[#e7eaec] p-1.5 sm:p-2">
                         <input
                           type="text"
                           placeholder=""
-                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-2 text-center font-mono focus:outline-none"
+                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-1.5 text-center font-mono focus:outline-none"
                         />
                       </td>
-                      <td className="border border-[#e7eaec] p-2">
+                      <td className="border border-[#e7eaec] p-1.5 sm:p-2">
                         <input
                           type="text"
                           value={form.perto_oe_dnp}
                           onChange={(e) => setForm({ ...form, perto_oe_dnp: e.target.value })}
-                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-2 text-center font-mono focus:outline-none focus:border-[#ed5565]"
+                          className="w-full border border-[#e5e6e7] rounded py-1.5 px-1.5 text-center font-mono focus:outline-none focus:border-[#ed5565]"
                         />
                       </td>
                     </tr>
@@ -1187,19 +1590,20 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
                     {/* LINHA ADIÇÃO ABAIXO DE PERTO */}
                     <tr>
                       <td colSpan={2}></td>
-                      <td className="border border-[#e7eaec] bg-[#f9f9f9] p-2 text-center">
+                      <td className="border border-[#e7eaec] bg-[#f9f9f9] p-1.5 sm:p-2 text-center">
                         <label className="block font-bold text-[#676a6c] mb-1">Adição</label>
                         <input
                           type="text"
                           value={form.adicao_od}
                           onChange={(e) => handleAdicaoChange(e.target.value)}
                           placeholder="+2.00"
-                          className="w-full border border-[#e5e6e7] bg-white rounded py-1.5 px-2 text-center font-mono font-bold focus:outline-none focus:border-[#1ab394]"
+                          className="w-full border border-[#e5e6e7] bg-white rounded py-1.5 px-1.5 text-center font-mono font-bold focus:outline-none focus:border-[#1ab394]"
                         />
                       </td>
-                      <td colSpan={4} className="border border-[#e7eaec] bg-[#f9f9f9] px-4">
+                      <td colSpan={4} className="border border-[#e7eaec] bg-[#f9f9f9] px-3">
                         <span className="text-[11px] text-[#888]">
-                          Ao digitar a <strong>Adição</strong>, o grau Esférico de <strong>PERTO (OD e OE)</strong> é calculado automaticamente.
+                          Ao digitar a <strong>Adição</strong>, o grau Esférico de{' '}
+                          <strong>PERTO (OD e OE)</strong> é calculado automaticamente.
                         </span>
                       </td>
                     </tr>
@@ -1214,27 +1618,32 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
       {/* =====================================================================
           CARD 5: INFORMAÇÕES ADICIONAIS (Idêntico ao print os_adicionais.png do ssOtica!)
          ===================================================================== */}
-      <div className="bg-white border border-[#e7eaec] rounded shadow-[0_1px_1px_rgba(0,0,0,0.05)]">
-        <div className="border-b border-[#e7eaec] px-5 py-3">
-          <h2 className="text-[14px] font-semibold text-[#676a6c]">Informações Adicionais</h2>
+      <div
+        id="sec-adicionais"
+        className="bg-white border border-[#e7eaec] rounded shadow-[0_1px_1px_rgba(0,0,0,0.05)] scroll-mt-16"
+      >
+        <div className="border-b border-[#e7eaec] px-4 sm:px-5 py-3">
+          <h2 className="text-[13px] sm:text-[14px] font-semibold text-[#676a6c]">
+            Informações Adicionais
+          </h2>
         </div>
 
-        <div className="p-5 space-y-5 text-xs">
+        <div className="p-3.5 sm:p-5 space-y-4 sm:space-y-5 text-xs">
           {/* Topo: Caixa/Gaveta | Laboratório | Local de Montagem | Cliente possui receita */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-            <div className="md:col-span-3">
+          <div className="grid grid-cols-2 md:grid-cols-12 gap-3 sm:gap-4 items-center">
+            <div className="col-span-2 md:col-span-3">
               <label className="block font-bold text-[#676a6c] mb-1">Caixa / Gaveta</label>
               <input
                 type="text"
                 value={form.bandeja_gaveta}
                 onChange={(e) => setForm({ ...form, bandeja_gaveta: e.target.value })}
-                className="w-full border border-[#e5e6e7] rounded px-3 py-1.5 text-xs text-[#676a6c] focus:outline-none focus:border-[#1ab394]"
+                className="w-full border border-[#e5e6e7] rounded px-3 py-2 sm:py-1.5 text-xs text-[#676a6c] focus:outline-none focus:border-[#1ab394]"
               />
             </div>
 
-            <div className="md:col-span-5">
+            <div className="col-span-2 md:col-span-5">
               <label className="block font-bold text-[#676a6c] mb-1">Laboratório</label>
-              <div className="flex items-center border border-[#e5e6e7] rounded bg-white px-2.5 py-1.5">
+              <div className="flex items-center border border-[#e5e6e7] rounded bg-white px-2.5 py-2 sm:py-1.5">
                 <Building2 className="w-4 h-4 text-[#888] mr-2 shrink-0" />
                 <input
                   type="text"
@@ -1246,7 +1655,7 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
               </div>
             </div>
 
-            <div className="md:col-span-2">
+            <div className="col-span-1 md:col-span-2">
               <label className="block font-bold text-[#676a6c] mb-1">Local de Montagem</label>
               <div className="flex items-center gap-3 pt-1">
                 <label className="flex items-center gap-1 cursor-pointer">
@@ -1263,13 +1672,13 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
                     checked={localMontagem === 'Laboratório'}
                     onChange={() => setLocalMontagem('Laboratório')}
                   />
-                  Laboratório
+                  Lab
                 </label>
               </div>
             </div>
 
-            <div className="md:col-span-2">
-              <label className="block font-bold text-[#676a6c] mb-1">Cliente possui receita</label>
+            <div className="col-span-1 md:col-span-2">
+              <label className="block font-bold text-[#676a6c] mb-1">Possui receita</label>
               <div className="flex items-center gap-3 pt-1">
                 <label className="flex items-center gap-1 cursor-pointer">
                   <input
@@ -1298,19 +1707,19 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
               type="text"
               value={form.tecnico_optico}
               onChange={(e) => setForm({ ...form, tecnico_optico: e.target.value })}
-              className="w-full border border-[#e5e6e7] rounded px-3 py-1.5 text-xs text-[#676a6c] focus:outline-none focus:border-[#1ab394]"
+              className="w-full border border-[#e5e6e7] rounded px-3 py-2 sm:py-1.5 text-xs text-[#676a6c] focus:outline-none focus:border-[#1ab394]"
             />
           </div>
 
           {/* SUB-CARDS LADO A LADO: LENTE | ARMAÇÃO (Idêntico ao print os_adicionais.png) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
             {/* SUB-CARD LENTE */}
             <div className="border border-[#e7eaec] rounded">
               <div className="bg-[#f5f5f6] border-b border-[#e7eaec] px-4 py-2.5 font-semibold text-[#676a6c]">
                 Lente
               </div>
-              <div className="p-4 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="p-3.5 sm:p-4 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
                     <label className="block font-bold text-[#676a6c] mb-1.5">Tipo</label>
                     <div className="flex items-center gap-4">
@@ -1353,14 +1762,14 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block font-bold text-[#676a6c] mb-1">Descrição</label>
                     <input
                       type="text"
                       value={form.lente_descricao}
                       onChange={(e) => setForm({ ...form, lente_descricao: e.target.value })}
-                      className="w-full border border-[#e5e6e7] rounded px-3 py-1.5 text-xs focus:outline-none focus:border-[#1ab394]"
+                      className="w-full border border-[#e5e6e7] rounded px-3 py-2 sm:py-1.5 text-xs focus:outline-none focus:border-[#1ab394]"
                     />
                   </div>
                   <div>
@@ -1369,7 +1778,7 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
                       type="text"
                       value={coloracaoLente}
                       onChange={(e) => setColoracaoLente(e.target.value)}
-                      className="w-full border border-[#e5e6e7] rounded px-3 py-1.5 text-xs focus:outline-none focus:border-[#1ab394]"
+                      className="w-full border border-[#e5e6e7] rounded px-3 py-2 sm:py-1.5 text-xs focus:outline-none focus:border-[#1ab394]"
                     />
                   </div>
                 </div>
@@ -1386,19 +1795,19 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
                       })
                     }
                     placeholder="Selecione os tratamentos aplicados..."
-                    className="w-full border border-[#e5e6e7] rounded px-3 py-1.5 text-xs focus:outline-none focus:border-[#1ab394]"
+                    className="w-full border border-[#e5e6e7] rounded px-3 py-2 sm:py-1.5 text-xs focus:outline-none focus:border-[#1ab394]"
                   />
                 </div>
 
                 {/* 5 campos de personalização da Lente do ssOtica: CRO, CVP, Distância de Leitura, Olho Dominante e Corredor */}
-                <div className="grid grid-cols-3 gap-2.5 pt-2 border-t border-[#e7eaec]">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-2 border-t border-[#e7eaec]">
                   <div>
                     <label className="block font-bold text-[#676a6c] mb-1">CRO</label>
                     <input
                       type="text"
                       value={cro}
                       onChange={(e) => setCro(e.target.value)}
-                      className="w-full border border-[#e5e6e7] rounded px-2.5 py-1 text-xs"
+                      className="w-full border border-[#e5e6e7] rounded px-2.5 py-1.5 text-xs"
                     />
                   </div>
                   <div>
@@ -1407,7 +1816,7 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
                       type="text"
                       value={cvp}
                       onChange={(e) => setCvp(e.target.value)}
-                      className="w-full border border-[#e5e6e7] rounded px-2.5 py-1 text-xs"
+                      className="w-full border border-[#e5e6e7] rounded px-2.5 py-1.5 text-xs"
                     />
                   </div>
                   <div>
@@ -1418,7 +1827,7 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
                       type="text"
                       value={distLeitura}
                       onChange={(e) => setDistLeitura(e.target.value)}
-                      className="w-full border border-[#e5e6e7] rounded px-2.5 py-1 text-xs"
+                      className="w-full border border-[#e5e6e7] rounded px-2.5 py-1.5 text-xs"
                     />
                   </div>
                   <div>
@@ -1426,7 +1835,7 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
                     <select
                       value={olhoDominante}
                       onChange={(e) => setOlhoDominante(e.target.value)}
-                      className="w-full border border-[#e5e6e7] rounded px-2 py-1 text-xs bg-white"
+                      className="w-full border border-[#e5e6e7] rounded px-2 py-1.5 text-xs bg-white"
                     >
                       <option value="Direito (OD)">Direito (OD)</option>
                       <option value="Esquerdo (OE)">Esquerdo (OE)</option>
@@ -1438,7 +1847,7 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
                       type="text"
                       value={corredorProgressivo}
                       onChange={(e) => setCorredorProgressivo(e.target.value)}
-                      className="w-full border border-[#e5e6e7] rounded px-2.5 py-1 text-xs"
+                      className="w-full border border-[#e5e6e7] rounded px-2.5 py-1.5 text-xs"
                     />
                   </div>
                 </div>
@@ -1450,10 +1859,12 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
               <div className="bg-[#f5f5f6] border-b border-[#e7eaec] px-4 py-2.5 font-semibold text-[#676a6c]">
                 Armação
               </div>
-              <div className="p-4 space-y-4">
+              <div className="p-3.5 sm:p-4 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block font-bold text-[#676a6c] mb-1.5">Armação própria</label>
+                    <label className="block font-bold text-[#676a6c] mb-1.5">
+                      Armação própria
+                    </label>
                     <div className="flex items-center gap-4">
                       <label className="flex items-center gap-1.5 cursor-pointer">
                         <input
@@ -1503,7 +1914,7 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block font-bold text-[#676a6c] mb-1">Tipo</label>
                     <select
@@ -1511,10 +1922,11 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
                       onChange={(e) =>
                         setForm({
                           ...form,
-                          armacao_tipo_montagem: e.target.value as OrdemServico['armacao_tipo_montagem'],
+                          armacao_tipo_montagem: e.target
+                            .value as OrdemServico['armacao_tipo_montagem'],
                         })
                       }
-                      className="w-full border border-[#e5e6e7] rounded px-3 py-1.5 text-xs bg-white"
+                      className="w-full border border-[#e5e6e7] rounded px-3 py-2 sm:py-1.5 text-xs bg-white"
                     >
                       <option value="Aro Fechado Acetato">Metal / Acetato Fechado</option>
                       <option value="Fio de Nylon (Supra)">Nylon / Supra</option>
@@ -1527,7 +1939,7 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
                     <select
                       value={formatoArmacao}
                       onChange={(e) => setFormatoArmacao(e.target.value)}
-                      className="w-full border border-[#e5e6e7] rounded px-3 py-1.5 text-xs bg-white"
+                      className="w-full border border-[#e5e6e7] rounded px-3 py-2 sm:py-1.5 text-xs bg-white"
                     >
                       <option value="1 - Redondo">1 - Redondo</option>
                       <option value="2 - Oval">2 - Oval</option>
@@ -1542,14 +1954,14 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
                 </div>
 
                 {/* Aro | Ponte | Aro + Ponte */}
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
                   <div>
                     <label className="block font-bold text-[#676a6c] mb-1">Aro</label>
                     <input
                       type="text"
                       value={form.armacao_aro}
                       onChange={(e) => setForm({ ...form, armacao_aro: e.target.value })}
-                      className="w-full border border-[#e5e6e7] rounded px-3 py-1.5 text-xs"
+                      className="w-full border border-[#e5e6e7] rounded px-2.5 py-1.5 text-xs text-center"
                     />
                   </div>
                   <div>
@@ -1558,7 +1970,7 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
                       type="text"
                       value={form.armacao_ponte}
                       onChange={(e) => setForm({ ...form, armacao_ponte: e.target.value })}
-                      className="w-full border border-[#e5e6e7] rounded px-3 py-1.5 text-xs"
+                      className="w-full border border-[#e5e6e7] rounded px-2.5 py-1.5 text-xs text-center"
                     />
                   </div>
                   <div>
@@ -1567,38 +1979,44 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
                       type="text"
                       readOnly
                       value={aroMaisPonte}
-                      className="w-full border border-[#e5e6e7] bg-[#eee] rounded px-3 py-1.5 text-xs font-bold"
+                      className="w-full border border-[#e5e6e7] bg-[#eee] rounded px-2.5 py-1.5 text-xs font-bold text-center"
                     />
                   </div>
                 </div>
 
                 {/* Maior Diagonal | Altura Vertical | Distância Pupilar */}
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
                   <div>
-                    <label className="block font-bold text-[#676a6c] mb-1">Maior Diagonal</label>
+                    <label className="block font-bold text-[#676a6c] mb-1 truncate">
+                      Maior Diagonal
+                    </label>
                     <input
                       type="text"
                       value={form.armacao_diagonal}
                       onChange={(e) => setForm({ ...form, armacao_diagonal: e.target.value })}
-                      className="w-full border border-[#e5e6e7] rounded px-3 py-1.5 text-xs"
+                      className="w-full border border-[#e5e6e7] rounded px-2.5 py-1.5 text-xs text-center"
                     />
                   </div>
                   <div>
-                    <label className="block font-bold text-[#676a6c] mb-1">Altura Vertical</label>
+                    <label className="block font-bold text-[#676a6c] mb-1 truncate">
+                      Alt. Vertical
+                    </label>
                     <input
                       type="text"
                       value={form.armacao_vertical}
                       onChange={(e) => setForm({ ...form, armacao_vertical: e.target.value })}
-                      className="w-full border border-[#e5e6e7] rounded px-3 py-1.5 text-xs"
+                      className="w-full border border-[#e5e6e7] rounded px-2.5 py-1.5 text-xs text-center"
                     />
                   </div>
                   <div>
-                    <label className="block font-bold text-[#676a6c] mb-1">Distância Pupilar</label>
+                    <label className="block font-bold text-[#676a6c] mb-1 truncate">
+                      Dist. Pupilar
+                    </label>
                     <input
                       type="text"
                       value={dpTotal}
                       readOnly
-                      className="w-full border border-[#e5e6e7] bg-[#f9f9f9] rounded px-3 py-1.5 text-xs font-bold"
+                      className="w-full border border-[#e5e6e7] bg-[#f9f9f9] rounded px-2.5 py-1.5 text-xs font-bold text-center"
                     />
                   </div>
                 </div>
@@ -1608,7 +2026,7 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
                   <label className="block font-bold text-[#676a6c] mb-1">
                     Altura do Centro Otico (CO)
                   </label>
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     <div>
                       <span className="text-[10px] font-bold text-[#676a6c] block mb-0.5">
                         Longe OD
@@ -1662,18 +2080,23 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
       {/* =====================================================================
           CARD 6: TECNOLOGIA DO PRODUTO (Idêntico ao print os_tecnologia.png do ssOtica!)
          ===================================================================== */}
-      <div className="bg-white border border-[#e7eaec] rounded shadow-[0_1px_1px_rgba(0,0,0,0.05)] p-5 space-y-5 text-xs">
+      <div
+        id="sec-tecnologia"
+        className="bg-white border border-[#e7eaec] rounded shadow-[0_1px_1px_rgba(0,0,0,0.05)] p-3.5 sm:p-5 space-y-4 sm:space-y-5 text-xs scroll-mt-16"
+      >
         {/* Aviso Laranja do topo do card */}
-        <div className="bg-[#fdf6ea] border border-[#f5d69f] rounded p-3.5 text-[#8a6d3b]">
+        <div className="bg-[#fdf6ea] border border-[#f5d69f] rounded p-3 sm:p-3.5 text-[#8a6d3b]">
           <strong className="text-[#c67d0a] block mb-0.5">Pedido enviado ao parceiro:</strong>
           Os campos abaixo só serão aplicados no pedido enviado ao parceiro,{' '}
           <strong>caso a lente selecionada no pedido ofereça a tecnologia correspondente.</strong> O
           que a lente escolhida não suportar é simplesmente desconsiderado, sem impedir o envio do
-          pedido. A validação acontece após selecionar a lente no pedido.
+          pedido.
         </div>
 
         <div>
-          <h3 className="text-[14px] font-semibold text-[#676a6c]">Tecnologia do produto</h3>
+          <h3 className="text-[13px] sm:text-[14px] font-semibold text-[#676a6c]">
+            Tecnologia do produto
+          </h3>
           <p className="text-[#888]">
             Configure dados de Prisma, distância vértice, ângulo pantoscópico, data de nascimento e
             mais:
@@ -1705,9 +2128,9 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
           </div>
 
           {prismaAtivo && (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-[#f9f9f9] p-3.5 rounded border border-[#e7eaec]">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-[#f9f9f9] p-3.5 rounded border border-[#e7eaec]">
               <div>
-                <label className="block font-bold mb-1">Prisma 1 • Olho Direito</label>
+                <label className="block font-bold mb-1">Prisma 1 • OD</label>
                 <input
                   type="text"
                   value={prisma1OdVal}
@@ -1730,7 +2153,7 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
                 </select>
               </div>
               <div>
-                <label className="block font-bold mb-1">Prisma 1 • Olho Esquerdo</label>
+                <label className="block font-bold mb-1">Prisma 1 • OE</label>
                 <input
                   type="text"
                   value={prisma1OeVal}
@@ -1772,7 +2195,7 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
                 value={gravacao[idx]}
                 disabled={idx > 0 && !gravacao[idx - 1]}
                 onChange={(e) => handleGravacaoChange(idx, e.target.value)}
-                className={`w-12 h-10 text-center font-mono font-bold text-sm border border-[#e5e6e7] rounded focus:outline-none focus:border-[#1ab394] ${
+                className={`w-11 sm:w-12 h-10 text-center font-mono font-bold text-sm border border-[#e5e6e7] rounded focus:outline-none focus:border-[#1ab394] ${
                   idx > 0 && !gravacao[idx - 1] ? 'bg-[#e9ecef]' : 'bg-white'
                 }`}
               />
@@ -1787,7 +2210,7 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
             <HelpCircle className="w-3.5 h-3.5 text-[#888]" />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
             <div>
               <label className="block font-bold text-[#676a6c] mb-1">Distância vértice (u)</label>
               <input
@@ -1795,7 +2218,7 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
                 value={form.distancia_vertice}
                 onChange={(e) => setForm({ ...form, distancia_vertice: e.target.value })}
                 placeholder="D. vértice"
-                className="w-full border border-[#e5e6e7] rounded px-3 py-1.5"
+                className="w-full border border-[#e5e6e7] rounded px-3 py-2 sm:py-1.5"
               />
             </div>
 
@@ -1808,33 +2231,30 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
                 value={form.angulo_pantoscopico}
                 onChange={(e) => setForm({ ...form, angulo_pantoscopico: e.target.value })}
                 placeholder="I. pantoscópica"
-                className="w-full border border-[#e5e6e7] rounded px-3 py-1.5"
+                className="w-full border border-[#e5e6e7] rounded px-3 py-2 sm:py-1.5"
               />
             </div>
 
-            <div>
+            <div className="col-span-2 md:col-span-1">
               <label className="block font-bold text-[#676a6c] mb-1">Framefit</label>
               <input
                 type="text"
                 value={framefit}
                 onChange={(e) => setFramefit(e.target.value)}
                 placeholder="Framefit"
-                className="w-full border border-[#e5e6e7] rounded px-3 py-1.5"
+                className="w-full border border-[#e5e6e7] rounded px-3 py-2 sm:py-1.5"
               />
             </div>
 
             <div>
-              <label className="block font-bold text-[#676a6c] mb-1">Distância entre hastes</label>
+              <label className="block font-bold text-[#676a6c] mb-1">Dist. entre hastes</label>
               <input
                 type="text"
                 value={distEntreHastes}
                 onChange={(e) => setDistEntreHastes(e.target.value)}
                 placeholder="D. hastes"
-                className="w-full border border-[#e5e6e7] rounded px-3 py-1.5"
+                className="w-full border border-[#e5e6e7] rounded px-3 py-2 sm:py-1.5"
               />
-              <span className="text-[10px] text-[#888]">
-                Sem limite. Junto com a distância frontal, calcula o ângulo panorâmico.
-              </span>
             </div>
 
             <div>
@@ -1844,30 +2264,24 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
                 value={distFrontal}
                 onChange={(e) => setDistFrontal(e.target.value)}
                 placeholder="D. frontal"
-                className="w-full border border-[#e5e6e7] rounded px-3 py-1.5"
+                className="w-full border border-[#e5e6e7] rounded px-3 py-2 sm:py-1.5"
               />
-              <span className="text-[10px] text-[#888]">
-                Sem limite. Junto com a distância entre hastes, calcula o ângulo panorâmico.
-              </span>
             </div>
 
-            <div>
+            <div className="col-span-2 md:col-span-1">
               <label className="block font-bold text-[#676a6c] mb-1">Ângulo panorâmico</label>
               <input
                 type="text"
                 value={anguloPanoramico}
                 onChange={(e) => setAnguloPanoramico(e.target.value)}
                 placeholder="A. Panorâmico"
-                className="w-full border border-[#e5e6e7] rounded px-3 py-1.5"
+                className="w-full border border-[#e5e6e7] rounded px-3 py-2 sm:py-1.5"
               />
-              <span className="text-[10px] text-[#888]">
-                Entre 0 e 15 quando informado manualmente.
-              </span>
             </div>
 
-            <div>
+            <div className="col-span-2 md:col-span-1">
               <label className="block font-bold text-[#676a6c] mb-1">Data de nascimento</label>
-              <div className="flex items-center border border-[#e5e6e7] rounded px-2.5 py-1.5">
+              <div className="flex items-center border border-[#e5e6e7] rounded px-2.5 py-2 sm:py-1.5">
                 <Calendar className="w-3.5 h-3.5 text-[#888] mr-2" />
                 <input
                   type="date"
@@ -1882,7 +2296,7 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
               <select
                 value={areaPrivilegiada}
                 onChange={(e) => setAreaPrivilegiada(e.target.value)}
-                className="w-full border border-[#e5e6e7] rounded px-3 py-1.5 bg-white"
+                className="w-full border border-[#e5e6e7] rounded px-2.5 py-2 sm:py-1.5 bg-white"
               >
                 <option value="Equilibrada (Longe/Perto)">Equilibrada (Longe/Perto)</option>
                 <option value="Prioridade Longe">Prioridade Longe</option>
@@ -1896,7 +2310,7 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
               <select
                 value={distanciaVisao}
                 onChange={(e) => setDistanciaVisao(e.target.value)}
-                className="w-full border border-[#e5e6e7] rounded px-3 py-1.5 bg-white"
+                className="w-full border border-[#e5e6e7] rounded px-2.5 py-2 sm:py-1.5 bg-white"
               >
                 <option value="Longe e Perto">Longe e Perto</option>
                 <option value="Apenas Longe">Apenas Longe</option>
@@ -1909,32 +2323,32 @@ export const OrdemServicoEditor: React.FC<OrdemServicoEditorProps> = ({
       </div>
 
       {/* BARRA INFERIOR DE AÇÃO PADRÃO SSOTICA */}
-      <div className="bg-white border border-[#e7eaec] rounded p-4 flex items-center justify-between">
+      <div className="bg-white border border-[#e7eaec] rounded p-3.5 sm:p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
         <button
           type="button"
           onClick={onBack}
-          className="px-4 py-2 rounded border border-[#e5e6e7] bg-white hover:bg-[#f3f3f4] text-xs font-semibold text-[#676a6c] cursor-pointer"
+          className="px-4 py-2.5 sm:py-2 rounded border border-[#e5e6e7] bg-white hover:bg-[#f3f3f4] text-xs font-semibold text-[#676a6c] cursor-pointer text-center"
         >
           Voltar para Listagem
         </button>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => onPrint(form)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded border border-[#e5e6e7] bg-white hover:bg-[#f3f3f4] text-xs font-semibold text-[#676a6c] cursor-pointer"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 sm:py-2 rounded border border-[#e5e6e7] bg-white hover:bg-[#f3f3f4] text-xs font-semibold text-[#676a6c] cursor-pointer"
           >
             <Printer className="w-4 h-4" />
-            Imprimir Comprovante / O.S.
+            Imprimir 2 Vias
           </button>
 
           <button
             type="submit"
             disabled={saving}
-            className="flex items-center gap-1.5 px-6 py-2 rounded bg-[#1ab394] hover:bg-[#18a689] text-white text-xs font-bold shadow-sm cursor-pointer"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-6 py-2.5 sm:py-2 rounded bg-[#1ab394] hover:bg-[#18a689] text-white text-xs font-bold shadow-sm cursor-pointer"
           >
             <Save className="w-4 h-4" />
-            {saving ? 'Salvando...' : 'Salvar'}
+            {saving ? 'Salvando...' : 'Salvar O.S.'}
           </button>
         </div>
       </div>

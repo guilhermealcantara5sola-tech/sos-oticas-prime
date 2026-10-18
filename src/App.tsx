@@ -4,7 +4,6 @@ import {
   Produto,
   OrdemServico,
   LancamentoFinanceiro,
-  StatusOS,
 } from './types';
 import {
   INITIAL_CLIENTES,
@@ -28,23 +27,18 @@ import {
   Plus,
   Search,
   Printer,
-  Edit3,
-  CheckCircle2,
   LayoutDashboard,
   ShoppingBag,
   Tag,
-  Trash2,
   Menu,
   Bell,
   Download,
   ChevronLeft,
   Building2,
-  HelpCircle,
   MessageCircle,
-  FileText,
-  Layers,
-  TrendingUp,
   Box,
+  X,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 type ActiveModule =
@@ -84,8 +78,21 @@ export function App() {
   const [printingOS, setPrintingOS] = useState<OrdemServico | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('Todos');
-  const [supabaseConnected, setSupabaseConnected] = useState(getSupabaseConfig().isConfigured);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [supabaseConnected, setSupabaseConnected] = useState(
+    getSupabaseConfig().isConfigured
+  );
+  // No celular inicia recolhido para dar 100% da tela ao sistema; no PC inicia aberto
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= 1024 : true
+  );
+
+  const navigateModule = (mod: ActiveModule) => {
+    setActiveModule(mod);
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setSidebarOpen(false);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Estado PDV (Vendas)
   const [pdvCart, setPdvCart] = useState<{ produto: Produto; qtd: number }[]>([]);
@@ -180,7 +187,8 @@ export function App() {
       if (prodData && prodData.length > 0) setProdutos(prodData as Produto[]);
 
       const { data: finData } = await client.from('financeiro').select('*');
-      if (finData && finData.length > 0) setFinanceiro(finData as LancamentoFinanceiro[]);
+      if (finData && finData.length > 0)
+        setFinanceiro(finData as LancamentoFinanceiro[]);
     } catch {
       // Mantém dados locais
     }
@@ -234,7 +242,9 @@ export function App() {
 
     const client = getSupabaseClient();
     if (client) {
-      await client.from('ordens_servico').upsert(updatedOS, { onConflict: 'codigo_os' });
+      await client
+        .from('ordens_servico')
+        .upsert(updatedOS, { onConflict: 'codigo_os' });
     }
   };
 
@@ -242,7 +252,9 @@ export function App() {
     const nextNum =
       ordens.length > 0 ? Math.max(...ordens.map((o) => o.numero_os)) + 1 : 1001;
     const today = new Date().toISOString().split('T')[0];
-    const futureDate = new Date(Date.now() + 5 * 86400000).toISOString().split('T')[0];
+    const futureDate = new Date(Date.now() + 5 * 86400000)
+      .toISOString()
+      .split('T')[0];
     const newCode = generateShortCode();
 
     const novaOS: OrdemServico = {
@@ -333,13 +345,19 @@ export function App() {
 
     setOrdens([novaOS, ...ordens]);
     setSelectedOSId(novaOS.id);
-    setActiveModule('os_editor');
+    navigateModule('os_editor');
   };
 
-  const handleSyncLocalToSupabase = async (): Promise<{ ok: boolean; message: string }> => {
+  const handleSyncLocalToSupabase = async (): Promise<{
+    ok: boolean;
+    message: string;
+  }> => {
     const client = getSupabaseClient();
     if (!client) {
-      return { ok: false, message: 'Configure a URL e a Anon Key do Supabase primeiro.' };
+      return {
+        ok: false,
+        message: 'Configure a URL e a Anon Key do Supabase primeiro.',
+      };
     }
 
     try {
@@ -461,7 +479,10 @@ export function App() {
 
   const handleFinalizarPDV = () => {
     if (pdvCart.length === 0) return;
-    const subtotal = pdvCart.reduce((acc, item) => acc + item.produto.preco_venda * item.qtd, 0);
+    const subtotal = pdvCart.reduce(
+      (acc, item) => acc + item.produto.preco_venda * item.qtd,
+      0
+    );
     const total = Math.max(0, subtotal - pdvDesconto);
     const today = new Date().toISOString().split('T')[0];
 
@@ -469,7 +490,9 @@ export function App() {
       {
         id: `fin-${Date.now()}`,
         os_id: null,
-        descricao: `Venda Balcão PDV (${pdvCart.map((i) => i.produto.nome).join(', ')}) - ${pdvClienteNome}`,
+        descricao: `Venda Balcão PDV (${pdvCart
+          .map((i) => i.produto.nome)
+          .join(', ')}) - ${pdvClienteNome}`,
         tipo: 'Entrada',
         categoria: 'Venda Direta PDV',
         forma_pagamento: pdvFormaPagto,
@@ -483,7 +506,9 @@ export function App() {
     setProdutos((prev) =>
       prev.map((p) => {
         const inCart = pdvCart.find((c) => c.produto.id === p.id);
-        return inCart ? { ...p, estoque: Math.max(0, p.estoque - inCart.qtd) } : p;
+        return inCart
+          ? { ...p, estoque: Math.max(0, p.estoque - inCart.qtd) }
+          : p;
       })
     );
 
@@ -493,7 +518,8 @@ export function App() {
     setTimeout(() => setPdvSuccess(false), 3500);
   };
 
-  const currentEditingOS = ordens.find((o) => o.id === selectedOSId) || ordens[0];
+  const currentEditingOS =
+    ordens.find((o) => o.id === selectedOSId) || ordens[0];
 
   const filteredOrdens = ordens.filter((o) => {
     const matchStatus = statusFilter === 'Todos' || o.status === statusFilter;
@@ -515,17 +541,28 @@ export function App() {
     .reduce((acc, o) => acc + Number(o.valor_restante || 0), 0);
 
   return (
-    <div className="min-h-screen flex bg-[#f3f3f4] text-[#676a6c]">
+    <div className="min-h-screen flex bg-[#f3f3f4] text-[#676a6c] relative">
+      {/* BACKDROP ESCURO NO CELULAR QUANDO O MENU ESTÁ ABERTO */}
+      {sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 bg-black/60 backdrop-blur-[1px] z-40 lg:hidden"
+        />
+      )}
+
       {/* =====================================================================
           MENU LATERAL ESQUERDO IDÊNTICO AO SSOTICA (#2f4050)
+          No Celular: Drawer Deslizante | No PC: Coluna Fixa
          ===================================================================== */}
       {sidebarOpen && (
-        <aside className="w-[220px] bg-[#2f4050] text-[#a7b1c2] flex flex-col shrink-0 select-none relative">
+        <aside className="fixed inset-y-0 left-0 z-50 w-[250px] lg:static lg:w-[220px] bg-[#2f4050] text-[#a7b1c2] flex flex-col shrink-0 select-none shadow-2xl lg:shadow-none">
           {/* Caixa Branca de Logo no Topo (Igual ao print os_tecnologia.png) */}
-          <div className="p-3 bg-[#263949]">
-            <div className="bg-white rounded py-3 px-4 flex flex-col items-center justify-center shadow-sm">
+          <div className="p-3 bg-[#263949] flex items-center gap-2">
+            <div className="flex-1 bg-white rounded py-2.5 px-3 flex flex-col items-center justify-center shadow-sm">
               <div className="flex items-center gap-1">
-                <span className="text-xl font-light tracking-tight text-[#2f4050]">ss</span>
+                <span className="text-xl font-light tracking-tight text-[#2f4050]">
+                  ss
+                </span>
                 <span className="relative text-xl font-bold text-[#0E9AEF]">
                   ó
                   <svg
@@ -540,19 +577,29 @@ export function App() {
                     <path d="M10 6h4" />
                   </svg>
                 </span>
-                <span className="text-xl font-light tracking-tight text-[#2f4050]">tica</span>
+                <span className="text-xl font-light tracking-tight text-[#2f4050]">
+                  tica
+                </span>
               </div>
               <span className="text-[9px] uppercase font-bold tracking-widest text-[#1ab394] -mt-1">
                 SOS Óticas Prime
               </span>
             </div>
+
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(false)}
+              className="lg:hidden p-2 text-[#a7b1c2] hover:text-white rounded cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
 
           {/* Itens do Menu Lateral (Idênticos aos prints oficiais do ssOtica) */}
           <nav className="flex-1 py-2 text-[13px] font-medium space-y-0.5 overflow-y-auto">
             <button
-              onClick={() => setActiveModule('dashboard')}
-              className={`w-full flex items-center gap-3 px-5 py-2.5 transition cursor-pointer ${
+              onClick={() => navigateModule('dashboard')}
+              className={`w-full flex items-center gap-3 px-5 py-3 lg:py-2.5 transition cursor-pointer ${
                 activeModule === 'dashboard'
                   ? 'bg-[#293846] text-white border-l-4 border-[#19aa8d]'
                   : 'hover:bg-[#293846] hover:text-white'
@@ -563,8 +610,8 @@ export function App() {
             </button>
 
             <button
-              onClick={() => setActiveModule('clientes')}
-              className={`w-full flex items-center gap-3 px-5 py-2.5 transition cursor-pointer ${
+              onClick={() => navigateModule('clientes')}
+              className={`w-full flex items-center gap-3 px-5 py-3 lg:py-2.5 transition cursor-pointer ${
                 activeModule === 'clientes'
                   ? 'bg-[#293846] text-white border-l-4 border-[#19aa8d]'
                   : 'hover:bg-[#293846] hover:text-white'
@@ -575,8 +622,8 @@ export function App() {
             </button>
 
             <button
-              onClick={() => setActiveModule('estoque')}
-              className={`w-full flex items-center gap-3 px-5 py-2.5 transition cursor-pointer ${
+              onClick={() => navigateModule('estoque')}
+              className={`w-full flex items-center gap-3 px-5 py-3 lg:py-2.5 transition cursor-pointer ${
                 activeModule === 'estoque'
                   ? 'bg-[#293846] text-white border-l-4 border-[#19aa8d]'
                   : 'hover:bg-[#293846] hover:text-white'
@@ -587,8 +634,8 @@ export function App() {
             </button>
 
             <button
-              onClick={() => setActiveModule('estoque')}
-              className="w-full flex items-center justify-between px-5 py-2.5 hover:bg-[#293846] hover:text-white transition cursor-pointer"
+              onClick={() => navigateModule('estoque')}
+              className="w-full flex items-center justify-between px-5 py-3 lg:py-2.5 hover:bg-[#293846] hover:text-white transition cursor-pointer"
             >
               <span className="flex items-center gap-3">
                 <Download className="w-4 h-4" />
@@ -599,8 +646,8 @@ export function App() {
 
             {/* ITEM ATIVO: ORDENS DE SERVIÇO */}
             <button
-              onClick={() => setActiveModule('os_editor')}
-              className={`w-full flex items-center justify-between px-5 py-2.5 transition cursor-pointer ${
+              onClick={() => navigateModule('os_editor')}
+              className={`w-full flex items-center justify-between px-5 py-3 lg:py-2.5 transition cursor-pointer ${
                 activeModule === 'os_editor' || activeModule === 'os_list'
                   ? 'bg-[#293846] text-white border-l-4 border-[#19aa8d] font-semibold'
                   : 'hover:bg-[#293846] hover:text-white'
@@ -624,10 +671,10 @@ export function App() {
 
             {/* Sub-itens rápidos de Ordem de Serviço */}
             {(activeModule === 'os_editor' || activeModule === 'os_list') && (
-              <div className="bg-[#23313f] py-1 pl-11 pr-3 space-y-1 text-xs">
+              <div className="bg-[#23313f] py-1.5 pl-11 pr-3 space-y-1 text-xs">
                 <button
-                  onClick={() => setActiveModule('os_editor')}
-                  className={`block w-full text-left py-1.5 px-2 rounded cursor-pointer ${
+                  onClick={() => navigateModule('os_editor')}
+                  className={`block w-full text-left py-2 lg:py-1.5 px-2 rounded cursor-pointer ${
                     activeModule === 'os_editor'
                       ? 'text-white font-bold bg-[#1ab394]/20'
                       : 'text-[#a7b1c2] hover:text-white'
@@ -636,8 +683,8 @@ export function App() {
                   • Editar O.S. ({currentEditingOS?.codigo_os})
                 </button>
                 <button
-                  onClick={() => setActiveModule('os_list')}
-                  className={`block w-full text-left py-1.5 px-2 rounded cursor-pointer ${
+                  onClick={() => navigateModule('os_list')}
+                  className={`block w-full text-left py-2 lg:py-1.5 px-2 rounded cursor-pointer ${
                     activeModule === 'os_list'
                       ? 'text-white font-bold bg-[#1ab394]/20'
                       : 'text-[#a7b1c2] hover:text-white'
@@ -647,7 +694,7 @@ export function App() {
                 </button>
                 <button
                   onClick={handleCreateNewOS}
-                  className="block w-full text-left py-1.5 px-2 rounded text-[#1ab394] hover:text-white font-bold cursor-pointer"
+                  className="block w-full text-left py-2 lg:py-1.5 px-2 rounded text-[#1ab394] hover:text-white font-bold cursor-pointer"
                 >
                   + Nova O.S.
                 </button>
@@ -655,8 +702,8 @@ export function App() {
             )}
 
             <button
-              onClick={() => setActiveModule('pdv')}
-              className={`w-full flex items-center gap-3 px-5 py-2.5 transition cursor-pointer ${
+              onClick={() => navigateModule('pdv')}
+              className={`w-full flex items-center gap-3 px-5 py-3 lg:py-2.5 transition cursor-pointer ${
                 activeModule === 'pdv'
                   ? 'bg-[#293846] text-white border-l-4 border-[#19aa8d]'
                   : 'hover:bg-[#293846] hover:text-white'
@@ -667,16 +714,16 @@ export function App() {
             </button>
 
             <button
-              onClick={() => setActiveModule('os_list')}
-              className="w-full flex items-center gap-3 px-5 py-2.5 hover:bg-[#293846] hover:text-white transition cursor-pointer"
+              onClick={() => navigateModule('os_list')}
+              className="w-full flex items-center gap-3 px-5 py-3 lg:py-2.5 hover:bg-[#293846] hover:text-white transition cursor-pointer"
             >
               <Tag className="w-4 h-4" />
               <span>Etapas O.S.</span>
             </button>
 
             <button
-              onClick={() => setActiveModule('financeiro')}
-              className={`w-full flex items-center justify-between px-5 py-2.5 transition cursor-pointer ${
+              onClick={() => navigateModule('financeiro')}
+              className={`w-full flex items-center justify-between px-5 py-3 lg:py-2.5 transition cursor-pointer ${
                 activeModule === 'financeiro'
                   ? 'bg-[#293846] text-white border-l-4 border-[#19aa8d]'
                   : 'hover:bg-[#293846] hover:text-white'
@@ -690,8 +737,8 @@ export function App() {
             </button>
 
             <button
-              onClick={() => setActiveModule('estoque')}
-              className="w-full flex items-center justify-between px-5 py-2.5 hover:bg-[#293846] hover:text-white transition cursor-pointer"
+              onClick={() => navigateModule('estoque')}
+              className="w-full flex items-center justify-between px-5 py-3 lg:py-2.5 hover:bg-[#293846] hover:text-white transition cursor-pointer"
             >
               <span className="flex items-center gap-3">
                 <Box className="w-4 h-4" />
@@ -701,8 +748,8 @@ export function App() {
             </button>
 
             <button
-              onClick={() => setActiveModule('supabase')}
-              className={`w-full flex items-center justify-between px-5 py-2.5 transition cursor-pointer ${
+              onClick={() => navigateModule('supabase')}
+              className={`w-full flex items-center justify-between px-5 py-3 lg:py-2.5 transition cursor-pointer ${
                 activeModule === 'supabase'
                   ? 'bg-[#293846] text-white border-l-4 border-[#19aa8d]'
                   : 'hover:bg-[#293846] hover:text-white'
@@ -724,8 +771,8 @@ export function App() {
           <div className="p-3">
             <button
               type="button"
-              onClick={() => setActiveModule('supabase')}
-              className="w-full bg-[#0E9AEF] hover:bg-[#0c87d1] text-white rounded-full py-2 px-4 flex items-center justify-center gap-2 text-xs font-semibold shadow-md cursor-pointer"
+              onClick={() => navigateModule('supabase')}
+              className="w-full bg-[#0E9AEF] hover:bg-[#0c87d1] text-white rounded-full py-2.5 lg:py-2 px-4 flex items-center justify-center gap-2 text-xs font-semibold shadow-md cursor-pointer"
             >
               <MessageCircle className="w-4 h-4" />
               <span>Atendimento</span>
@@ -739,59 +786,66 @@ export function App() {
          ===================================================================== */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Navbar Branca Padrão ssOtica */}
-        <header className="h-14 bg-white border-b border-[#e7eaec] px-5 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-4">
+        <header className="h-14 bg-white border-b border-[#e7eaec] px-3 sm:px-5 flex items-center justify-between shrink-0 sticky top-0 z-30">
+          <div className="flex items-center gap-2.5 sm:gap-4">
             <button
               type="button"
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-1.5 rounded hover:bg-[#f3f3f4] text-[#676a6c] cursor-pointer"
+              className="p-2 rounded bg-[#1ab394] text-white sm:bg-transparent sm:text-[#676a6c] hover:bg-[#18a689] sm:hover:bg-[#f3f3f4] cursor-pointer"
+              aria-label="Abrir Menu"
             >
               <Menu className="w-5 h-5" />
             </button>
-            <div className="flex items-center gap-1 select-none">
+            <div
+              onClick={() => navigateModule('os_editor')}
+              className="flex items-center gap-1 select-none cursor-pointer"
+            >
               <span className="text-lg font-light text-[#2f4050]">ss</span>
               <span className="text-lg font-bold text-[#0E9AEF]">ó</span>
               <span className="text-lg font-light text-[#2f4050]">tica</span>
-              <span className="ml-2 text-xs bg-[#f3f3f4] text-[#676a6c] px-2 py-0.5 rounded font-semibold">
+              <span className="ml-1.5 text-[11px] sm:text-xs bg-[#f3f3f4] text-[#676a6c] px-2 py-0.5 rounded font-semibold truncate max-w-[120px] sm:max-w-none">
                 SOS Óticas Prime
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2.5 sm:gap-4">
             <button
               type="button"
               onClick={handleCreateNewOS}
-              className="flex items-center gap-1.5 border border-[#e5e6e7] rounded px-3 py-1.5 text-xs font-semibold text-[#676a6c] hover:bg-[#f3f3f4] cursor-pointer"
+              className="flex items-center gap-1 border border-[#1ab394] sm:border-[#e5e6e7] bg-[#e8f8f5] sm:bg-white rounded px-2.5 sm:px-3 py-1.5 text-xs font-bold sm:font-semibold text-[#1ab394] sm:text-[#676a6c] hover:bg-[#f3f3f4] cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5 text-[#1ab394]" />
-              + Nova O.S.
+              <span>Nova O.S.</span>
             </button>
 
             <button
               type="button"
-              onClick={() => setActiveModule('supabase')}
-              className="hidden sm:flex items-center gap-1.5 border border-[#e5e6e7] rounded px-3 py-1.5 text-xs text-[#676a6c] hover:bg-[#f3f3f4] cursor-pointer"
+              onClick={() => navigateModule('supabase')}
+              className="hidden md:flex items-center gap-1.5 border border-[#e5e6e7] rounded px-3 py-1.5 text-xs text-[#676a6c] hover:bg-[#f3f3f4] cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
               Baixar Suporte Remoto
             </button>
 
-            <div className="relative cursor-pointer">
+            <div
+              onClick={() => navigateModule('os_list')}
+              className="relative cursor-pointer p-1"
+            >
               <Bell className="w-5 h-5 text-[#ef5350]" />
-              <span className="absolute -top-1.5 -right-1.5 bg-[#f8ac59] text-white text-[10px] font-bold px-1 rounded">
+              <span className="absolute -top-0.5 -right-0.5 bg-[#f8ac59] text-white text-[10px] font-bold px-1 rounded">
                 {ordens.length}
               </span>
             </div>
 
-            <div className="w-8 h-8 rounded-full bg-[#2f4050] text-white flex items-center justify-center text-xs font-bold">
+            <div className="w-8 h-8 rounded-full bg-[#2f4050] text-white flex items-center justify-center text-xs font-bold shrink-0">
               GA
             </div>
           </div>
         </header>
 
         {/* Área Principal */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 pb-24 lg:pb-8">
           {/* 1. EDITOR DE ORDEM DE SERVIÇO (PADRÃO SSOTICA) */}
           {activeModule === 'os_editor' && currentEditingOS && (
             <OrdemServicoEditor
@@ -799,14 +853,14 @@ export function App() {
               clientes={clientes}
               produtos={produtos}
               onSave={handleSaveOS}
-              onBack={() => setActiveModule('os_list')}
+              onBack={() => navigateModule('os_list')}
               onPrint={(osToPrint) => setPrintingOS(osToPrint)}
               onOpenNewProductModal={() => {
-                setActiveModule('estoque');
+                navigateModule('estoque');
                 setShowNewProdModal(true);
               }}
               onOpenNewClientModal={() => {
-                setActiveModule('clientes');
+                navigateModule('clientes');
                 setShowNewClientModal(true);
               }}
             />
@@ -814,11 +868,11 @@ export function App() {
 
           {/* 2. TELA DE BUSCA E LISTAGEM DE ORDENS DE SERVIÇO (IDÊNTICA A ss2.png!) */}
           {activeModule === 'os_list' && (
-            <div className="space-y-5">
-              <div className="bg-white border-b border-[#e7eaec] -mx-6 -mt-6 px-6 py-4 mb-5 flex items-center justify-between">
+            <div className="space-y-4 sm:space-y-5">
+              <div className="bg-white border-b border-[#e7eaec] -mx-3 sm:-mx-4 md:-mx-6 -mt-3 sm:-mt-4 md:-mt-6 px-3 sm:px-5 md:px-6 py-3.5 sm:py-4 mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-2.5 text-[#676a6c]">
                   <svg
-                    className="w-7 h-7"
+                    className="w-6 h-6 sm:w-7 sm:h-7"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -828,12 +882,12 @@ export function App() {
                     <circle cx="18" cy="14" r="4" />
                     <path d="M10 14h4" />
                   </svg>
-                  <h1 className="text-2xl font-light">Ordens de Serviço</h1>
+                  <h1 className="text-lg sm:text-2xl font-light">Ordens de Serviço</h1>
                 </div>
 
                 <button
                   onClick={handleCreateNewOS}
-                  className="flex items-center gap-1.5 bg-[#1ab394] hover:bg-[#18a689] text-white px-4 py-2 rounded text-xs font-bold cursor-pointer"
+                  className="flex items-center gap-1.5 bg-[#1ab394] hover:bg-[#18a689] text-white px-3.5 sm:px-4 py-2 rounded text-xs font-bold cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
                   Nova O.S.
@@ -841,11 +895,11 @@ export function App() {
               </div>
 
               {/* Card de Filtros Padronizado ssOtica (Idêntico ao print ss2.png) */}
-              <div className="bg-white border border-[#e7eaec] rounded p-5 space-y-4 text-xs">
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+              <div className="bg-white border border-[#e7eaec] rounded p-3.5 sm:p-5 space-y-3.5 sm:space-y-4 text-xs">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4">
                   <div className="md:col-span-3">
                     <label className="block font-bold text-[#676a6c] mb-1">Empresa</label>
-                    <div className="flex items-center border border-[#e5e6e7] rounded px-2.5 py-1.5">
+                    <div className="flex items-center border border-[#e5e6e7] rounded px-2.5 py-2 sm:py-1.5">
                       <Building2 className="w-3.5 h-3.5 text-[#888] mr-2" />
                       <select className="w-full bg-transparent text-xs focus:outline-none">
                         <option>SOS Óticas Prime</option>
@@ -855,7 +909,7 @@ export function App() {
 
                   <div className="md:col-span-3">
                     <label className="block font-bold text-[#676a6c] mb-1">Tipo O.S.</label>
-                    <select className="w-full border border-[#e5e6e7] rounded px-2.5 py-1.5 bg-white">
+                    <select className="w-full border border-[#e5e6e7] rounded px-2.5 py-2 sm:py-1.5 bg-white">
                       <option>Todos (Ótica / Conserto)</option>
                       <option>Ótica (Laboratório)</option>
                       <option>Serviço (Conserto)</option>
@@ -863,21 +917,23 @@ export function App() {
                   </div>
 
                   <div className="md:col-span-6">
-                    <label className="block font-bold text-[#676a6c] mb-1">Nº O.S. / Código</label>
+                    <label className="block font-bold text-[#676a6c] mb-1">
+                      Nº O.S. / Código
+                    </label>
                     <input
                       type="text"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       placeholder="Digite o Nº (ex: 1042) ou Código (ex: NNqxKG)..."
-                      className="w-full border border-[#e5e6e7] rounded px-3 py-1.5 focus:outline-none focus:border-[#1ab394]"
+                      className="w-full border border-[#e5e6e7] rounded px-3 py-2 sm:py-1.5 focus:outline-none focus:border-[#1ab394]"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4 items-end">
                   <div className="md:col-span-6">
                     <label className="block font-bold text-[#676a6c] mb-1">Busca</label>
-                    <div className="flex items-center border border-[#e5e6e7] rounded px-2.5 py-1.5">
+                    <div className="flex items-center border border-[#e5e6e7] rounded px-2.5 py-2 sm:py-1.5">
                       <Search className="w-3.5 h-3.5 text-[#888] mr-2" />
                       <input
                         type="text"
@@ -894,7 +950,7 @@ export function App() {
                     <select
                       value={statusFilter}
                       onChange={(e) => setStatusFilter(e.target.value)}
-                      className="w-full border border-[#e5e6e7] rounded px-2.5 py-1.5 bg-white"
+                      className="w-full border border-[#e5e6e7] rounded px-2.5 py-2 sm:py-1.5 bg-white"
                     >
                       <option value="Todos">Todas as Etapas</option>
                       <option value="Aberta">Aberta</option>
@@ -908,7 +964,7 @@ export function App() {
                   <div className="md:col-span-3 flex justify-end">
                     <button
                       type="button"
-                      className="bg-[#0E9AEF] hover:bg-[#0c87d1] text-white px-5 py-2 rounded text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                      className="w-full md:w-auto justify-center bg-[#0E9AEF] hover:bg-[#0c87d1] text-white px-5 py-2 rounded text-xs font-bold flex items-center gap-1.5 cursor-pointer"
                     >
                       <Search className="w-3.5 h-3.5" />
                       Buscar
@@ -917,8 +973,75 @@ export function App() {
                 </div>
               </div>
 
-              {/* Tabela de Resultados */}
-              <div className="bg-white border border-[#e7eaec] rounded overflow-hidden">
+              {/* CARDS MOBILE DE ORDENS DE SERVIÇO (Visível no Celular < 768px) */}
+              <div className="md:hidden space-y-3">
+                {filteredOrdens.map((os) => (
+                  <div
+                    key={os.id}
+                    className="bg-white border border-[#e7eaec] rounded-lg p-3.5 space-y-2.5 shadow-sm"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <strong className="text-sm text-[#2f4050]">#{os.numero_os}</strong>
+                        <span className="font-mono text-xs bg-[#e7f4fd] text-[#0E9AEF] px-2 py-0.5 rounded font-bold">
+                          {os.codigo_os}
+                        </span>
+                      </div>
+                      <span className="px-2.5 py-0.5 rounded-full bg-[#e8f8f5] text-[#1ab394] text-[11px] font-bold">
+                        {os.status}
+                      </span>
+                    </div>
+
+                    <div>
+                      <strong className="text-sm text-[#2f4050] block">
+                        {os.cliente_nome || 'Cliente não informado'}
+                      </strong>
+                      <span className="text-xs text-[#888]">
+                        {os.cliente_telefone} • Entrega: {os.data_previsao} às {os.hora_previsao}
+                      </span>
+                    </div>
+
+                    <div className="bg-[#f9f9f9] p-2.5 rounded border border-[#e7eaec] text-xs space-y-1">
+                      <p className="truncate font-semibold text-[#676a6c]">
+                        👓 {os.lente_descricao || 'Lente não especificada'}
+                      </p>
+                      <p className="truncate text-[#888]">
+                        🕶️ {os.armacao_descricao || 'Armação do cliente'} ({os.bandeja_gaveta})
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1">
+                      <div>
+                        <span className="text-[10px] text-[#888] block">Valor Total</span>
+                        <strong className="text-sm text-[#1ab394]">
+                          R$ {os.valor_total.toFixed(2)}
+                        </strong>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setPrintingOS(os)}
+                          className="px-3 py-2 rounded border border-[#e5e6e7] bg-white hover:bg-[#f3f3f4] text-xs font-semibold flex items-center gap-1 cursor-pointer"
+                        >
+                          <Printer className="w-3.5 h-3.5" />
+                          2 Vias
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedOSId(os.id);
+                            navigateModule('os_editor');
+                          }}
+                          className="bg-[#1ab394] hover:bg-[#18a689] text-white px-4 py-2 rounded text-xs font-bold cursor-pointer"
+                        >
+                          Abrir O.S.
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* TABELA DESKTOP DE RESULTADOS */}
+              <div className="hidden md:block bg-white border border-[#e7eaec] rounded overflow-x-auto">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="bg-[#f5f5f6] border-b border-[#e7eaec] font-bold text-[#676a6c]">
@@ -969,7 +1092,7 @@ export function App() {
                             <button
                               onClick={() => {
                                 setSelectedOSId(os.id);
-                                setActiveModule('os_editor');
+                                navigateModule('os_editor');
                               }}
                               className="bg-[#1ab394] hover:bg-[#18a689] text-white px-3 py-1 rounded text-xs font-semibold cursor-pointer"
                             >
@@ -993,10 +1116,10 @@ export function App() {
 
           {/* 3. VENDAS / PDV */}
           {activeModule === 'pdv' && (
-            <div className="space-y-5">
-              <div className="bg-white border border-[#e7eaec] rounded p-5 flex items-center justify-between">
+            <div className="space-y-4 sm:space-y-5">
+              <div className="bg-white border border-[#e7eaec] rounded p-4 sm:p-5 flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <h1 className="text-lg font-semibold text-[#676a6c]">
+                  <h1 className="text-base sm:text-lg font-semibold text-[#676a6c]">
                     Vendas • Frente de Caixa
                   </h1>
                   <p className="text-xs text-[#888]">
@@ -1010,10 +1133,12 @@ export function App() {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                <div className="lg:col-span-2 bg-white border border-[#e7eaec] rounded p-5 space-y-3">
-                  <h3 className="font-semibold text-sm">Produtos em Estoque</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
+                <div className="lg:col-span-2 bg-white border border-[#e7eaec] rounded p-4 sm:p-5 space-y-3">
+                  <h3 className="font-semibold text-sm">
+                    Produtos em Estoque (Toque para adicionar)
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-3 text-xs">
                     {produtos.map((prod) => (
                       <div
                         key={prod.id}
@@ -1022,21 +1147,23 @@ export function App() {
                             const ex = prev.find((i) => i.produto.id === prod.id);
                             if (ex) {
                               return prev.map((i) =>
-                                i.produto.id === prod.id ? { ...i, qtd: i.qtd + 1 } : i
+                                i.produto.id === prod.id
+                                  ? { ...i, qtd: i.qtd + 1 }
+                                  : i
                               );
                             }
                             return [...prev, { produto: prod, qtd: 1 }];
                           })
                         }
-                        className="p-3 border border-[#e7eaec] rounded hover:border-[#1ab394] cursor-pointer flex justify-between items-center"
+                        className="p-3 border border-[#e7eaec] rounded hover:border-[#1ab394] active:bg-[#e8f8f5] cursor-pointer flex justify-between items-center"
                       >
-                        <div>
+                        <div className="pr-2">
                           <strong className="block">{prod.nome}</strong>
                           <span className="text-[#888]">
                             {prod.codigo} • Estoque: {prod.estoque}
                           </span>
                         </div>
-                        <strong className="text-[#1ab394]">
+                        <strong className="text-[#1ab394] shrink-0">
                           R$ {prod.preco_venda.toFixed(2)}
                         </strong>
                       </div>
@@ -1044,7 +1171,7 @@ export function App() {
                   </div>
                 </div>
 
-                <div className="bg-white border border-[#e7eaec] rounded p-5 flex flex-col justify-between space-y-4 text-xs">
+                <div className="bg-white border border-[#e7eaec] rounded p-4 sm:p-5 flex flex-col justify-between space-y-4 text-xs">
                   <div className="space-y-3">
                     <h3 className="font-semibold text-sm border-b border-[#e7eaec] pb-2">
                       Resumo da Venda
@@ -1053,18 +1180,30 @@ export function App() {
                       type="text"
                       value={pdvClienteNome}
                       onChange={(e) => setPdvClienteNome(e.target.value)}
-                      className="w-full border border-[#e5e6e7] rounded px-3 py-1.5"
+                      className="w-full border border-[#e5e6e7] rounded px-3 py-2"
                     />
+                    <select
+                      value={pdvFormaPagto}
+                      onChange={(e) => setPdvFormaPagto(e.target.value)}
+                      className="w-full border border-[#e5e6e7] rounded px-3 py-2 bg-white"
+                    >
+                      <option value="PIX à Vista">PIX à Vista</option>
+                      <option value="Cartão de Crédito">Cartão de Crédito</option>
+                      <option value="Cartão de Débito">Cartão de Débito</option>
+                      <option value="Dinheiro">Dinheiro</option>
+                    </select>
                     <div className="space-y-2">
                       {pdvCart.map((item) => (
                         <div
                           key={item.produto.id}
-                          className="flex justify-between items-center bg-[#f9f9f9] p-2 rounded"
+                          className="flex justify-between items-center bg-[#f9f9f9] p-2.5 rounded"
                         >
                           <span>
                             {item.qtd}x {item.produto.nome}
                           </span>
-                          <strong>R$ {(item.qtd * item.produto.preco_venda).toFixed(2)}</strong>
+                          <strong>
+                            R$ {(item.qtd * item.produto.preco_venda).toFixed(2)}
+                          </strong>
                         </div>
                       ))}
                     </div>
@@ -1073,7 +1212,7 @@ export function App() {
                     type="button"
                     onClick={handleFinalizarPDV}
                     disabled={pdvCart.length === 0}
-                    className="w-full bg-[#1ab394] hover:bg-[#18a689] disabled:bg-[#ccc] text-white py-2 rounded font-bold cursor-pointer"
+                    className="w-full bg-[#1ab394] hover:bg-[#18a689] disabled:bg-[#ccc] text-white py-2.5 rounded font-bold cursor-pointer"
                   >
                     Finalizar Venda
                   </button>
@@ -1084,41 +1223,45 @@ export function App() {
 
           {/* 4. PAINEL DE INFORMAÇÕES */}
           {activeModule === 'dashboard' && (
-            <div className="space-y-5">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-white p-5 rounded border border-[#e7eaec]">
-                  <span className="text-xs font-bold uppercase text-[#888]">
-                    Total em Ordens de Serviço
+            <div className="space-y-4 sm:space-y-5">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+                <div className="bg-white p-4 sm:p-5 rounded border border-[#e7eaec]">
+                  <span className="text-[11px] font-bold uppercase text-[#888]">
+                    Total em O.S.
                   </span>
-                  <p className="text-2xl font-bold text-[#2f4050] mt-1">
+                  <p className="text-lg sm:text-2xl font-bold text-[#2f4050] mt-1">
                     R$ {totalFaturado.toFixed(2)}
                   </p>
                 </div>
-                <div className="bg-white p-5 rounded border border-[#e7eaec]">
-                  <span className="text-xs font-bold uppercase text-[#888]">
-                    Saldo a Receber (Retiradas)
+                <div className="bg-white p-4 sm:p-5 rounded border border-[#e7eaec]">
+                  <span className="text-[11px] font-bold uppercase text-[#888]">
+                    A Receber
                   </span>
-                  <p className="text-2xl font-bold text-[#f8ac59] mt-1">
+                  <p className="text-lg sm:text-2xl font-bold text-[#f8ac59] mt-1">
                     R$ {totalAReceber.toFixed(2)}
                   </p>
                 </div>
-                <div className="bg-white p-5 rounded border border-[#e7eaec]">
-                  <span className="text-xs font-bold uppercase text-[#888]">
-                    O.S. Ativas no Lab / Loja
+                <div className="bg-white p-4 sm:p-5 rounded border border-[#e7eaec]">
+                  <span className="text-[11px] font-bold uppercase text-[#888]">
+                    O.S. Ativas
                   </span>
-                  <p className="text-2xl font-bold text-[#0E9AEF] mt-1">{ordens.length}</p>
+                  <p className="text-lg sm:text-2xl font-bold text-[#0E9AEF] mt-1">
+                    {ordens.length}
+                  </p>
                 </div>
-                <div className="bg-white p-5 rounded border border-[#e7eaec]">
-                  <span className="text-xs font-bold uppercase text-[#888]">
-                    Clientes Cadastrados
+                <div className="bg-white p-4 sm:p-5 rounded border border-[#e7eaec]">
+                  <span className="text-[11px] font-bold uppercase text-[#888]">
+                    Clientes
                   </span>
-                  <p className="text-2xl font-bold text-[#1ab394] mt-1">{clientes.length}</p>
+                  <p className="text-lg sm:text-2xl font-bold text-[#1ab394] mt-1">
+                    {clientes.length}
+                  </p>
                 </div>
               </div>
 
-              <div className="bg-white border border-[#e7eaec] rounded p-5">
+              <div className="bg-white border border-[#e7eaec] rounded p-4 sm:p-5">
                 <h3 className="font-semibold text-sm mb-3">
-                  Ordens de Serviço Recentes (Clique para abrir)
+                  Ordens de Serviço Recentes (Toque para abrir)
                 </h3>
                 <div className="space-y-2 text-xs">
                   {ordens.map((os) => (
@@ -1126,17 +1269,17 @@ export function App() {
                       key={os.id}
                       onClick={() => {
                         setSelectedOSId(os.id);
-                        setActiveModule('os_editor');
+                        navigateModule('os_editor');
                       }}
-                      className="p-3 border border-[#e7eaec] rounded hover:border-[#1ab394] flex justify-between items-center cursor-pointer"
+                      className="p-3 border border-[#e7eaec] rounded hover:border-[#1ab394] flex justify-between items-center gap-2 cursor-pointer"
                     >
-                      <div>
-                        <strong>
+                      <div className="min-w-0">
+                        <strong className="block truncate">
                           O.S. #{os.numero_os} ({os.codigo_os}) — {os.cliente_nome}
                         </strong>
-                        <p className="text-[#888]">{os.lente_descricao}</p>
+                        <p className="text-[#888] truncate">{os.lente_descricao}</p>
                       </div>
-                      <span className="font-bold text-[#1ab394]">
+                      <span className="font-bold text-[#1ab394] shrink-0">
                         R$ {os.valor_total.toFixed(2)}
                       </span>
                     </div>
@@ -1148,9 +1291,11 @@ export function App() {
 
           {/* 5. CLIENTES */}
           {activeModule === 'clientes' && (
-            <div className="space-y-5">
-              <div className="bg-white border border-[#e7eaec] rounded p-5 flex items-center justify-between">
-                <h1 className="text-lg font-semibold">Clientes Cadastrados</h1>
+            <div className="space-y-4 sm:space-y-5">
+              <div className="bg-white border border-[#e7eaec] rounded p-4 sm:p-5 flex items-center justify-between">
+                <h1 className="text-base sm:text-lg font-semibold">
+                  Clientes Cadastrados
+                </h1>
                 <button
                   onClick={() => setShowNewClientModal(true)}
                   className="bg-[#1ab394] text-white px-4 py-2 rounded text-xs font-bold cursor-pointer"
@@ -1162,21 +1307,25 @@ export function App() {
               {showNewClientModal && (
                 <form
                   onSubmit={handleAddCliente}
-                  className="bg-white p-5 rounded border border-[#1ab394] grid grid-cols-1 md:grid-cols-3 gap-3 text-xs"
+                  className="bg-white p-4 sm:p-5 rounded border border-[#1ab394] grid grid-cols-1 md:grid-cols-3 gap-3 text-xs"
                 >
                   <input
                     type="text"
                     required
                     placeholder="Nome Completo *"
                     value={newClient.nome}
-                    onChange={(e) => setNewClient({ ...newClient, nome: e.target.value })}
+                    onChange={(e) =>
+                      setNewClient({ ...newClient, nome: e.target.value })
+                    }
                     className="border border-[#e5e6e7] rounded px-3 py-2"
                   />
                   <input
                     type="text"
                     placeholder="CPF"
                     value={newClient.cpf}
-                    onChange={(e) => setNewClient({ ...newClient, cpf: e.target.value })}
+                    onChange={(e) =>
+                      setNewClient({ ...newClient, cpf: e.target.value })
+                    }
                     className="border border-[#e5e6e7] rounded px-3 py-2"
                   />
                   <input
@@ -1196,7 +1345,7 @@ export function App() {
                   <div className="md:col-span-3 flex justify-end gap-2">
                     <button
                       type="submit"
-                      className="bg-[#1ab394] text-white px-4 py-1.5 rounded font-bold"
+                      className="bg-[#1ab394] text-white px-4 py-2 rounded font-bold"
                     >
                       Salvar Cliente
                     </button>
@@ -1204,9 +1353,12 @@ export function App() {
                 </form>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 text-xs">
                 {clientes.map((c) => (
-                  <div key={c.id} className="bg-white p-4 rounded border border-[#e7eaec] space-y-1">
+                  <div
+                    key={c.id}
+                    className="bg-white p-4 rounded border border-[#e7eaec] space-y-1"
+                  >
                     <strong className="text-sm block">{c.nome}</strong>
                     <p>CPF: {c.cpf}</p>
                     <p>Tel: {c.telefone}</p>
@@ -1219,28 +1371,32 @@ export function App() {
 
           {/* 6. PRODUTOS / ESTOQUE */}
           {activeModule === 'estoque' && (
-            <div className="space-y-5">
-              <div className="bg-white border border-[#e7eaec] rounded p-5 flex items-center justify-between">
-                <h1 className="text-lg font-semibold">Produtos • Armações e Lentes</h1>
+            <div className="space-y-4 sm:space-y-5">
+              <div className="bg-white border border-[#e7eaec] rounded p-4 sm:p-5 flex items-center justify-between">
+                <h1 className="text-base sm:text-lg font-semibold">
+                  Produtos • Armações e Lentes
+                </h1>
                 <button
                   onClick={() => setShowNewProdModal(true)}
-                  className="bg-[#1ab394] text-white px-4 py-2 rounded text-xs font-bold cursor-pointer"
+                  className="bg-[#1ab394] text-white px-3.5 sm:px-4 py-2 rounded text-xs font-bold cursor-pointer"
                 >
-                  + Cadastrar novo produto
+                  + Novo Produto
                 </button>
               </div>
 
               {showNewProdModal && (
                 <form
                   onSubmit={handleAddProduto}
-                  className="bg-white p-5 rounded border border-[#1ab394] grid grid-cols-1 md:grid-cols-4 gap-3 text-xs"
+                  className="bg-white p-4 sm:p-5 rounded border border-[#1ab394] grid grid-cols-1 md:grid-cols-4 gap-3 text-xs"
                 >
                   <input
                     type="text"
                     required
                     placeholder="Código"
                     value={newProd.codigo}
-                    onChange={(e) => setNewProd({ ...newProd, codigo: e.target.value })}
+                    onChange={(e) =>
+                      setNewProd({ ...newProd, codigo: e.target.value })
+                    }
                     className="border border-[#e5e6e7] rounded px-3 py-2"
                   />
                   <input
@@ -1248,7 +1404,9 @@ export function App() {
                     required
                     placeholder="Nome do Produto *"
                     value={newProd.nome}
-                    onChange={(e) => setNewProd({ ...newProd, nome: e.target.value })}
+                    onChange={(e) =>
+                      setNewProd({ ...newProd, nome: e.target.value })
+                    }
                     className="md:col-span-2 border border-[#e5e6e7] rounded px-3 py-2"
                   />
                   <input
@@ -1258,14 +1416,17 @@ export function App() {
                     placeholder="Valor Venda"
                     value={newProd.preco_venda || ''}
                     onChange={(e) =>
-                      setNewProd({ ...newProd, preco_venda: parseFloat(e.target.value) || 0 })
+                      setNewProd({
+                        ...newProd,
+                        preco_venda: parseFloat(e.target.value) || 0,
+                      })
                     }
                     className="border border-[#e5e6e7] rounded px-3 py-2"
                   />
                   <div className="md:col-span-4 flex justify-end">
                     <button
                       type="submit"
-                      className="bg-[#1ab394] text-white px-4 py-1.5 rounded font-bold"
+                      className="bg-[#1ab394] text-white px-4 py-2 rounded font-bold"
                     >
                       Salvar Produto
                     </button>
@@ -1273,8 +1434,8 @@ export function App() {
                 </form>
               )}
 
-              <div className="bg-white border border-[#e7eaec] rounded overflow-hidden">
-                <table className="w-full text-left border-collapse text-xs">
+              <div className="bg-white border border-[#e7eaec] rounded overflow-x-auto">
+                <table className="w-full min-w-[480px] text-left border-collapse text-xs">
                   <thead>
                     <tr className="bg-[#f5f5f6] border-b border-[#e7eaec] font-bold">
                       <th className="py-3 px-4">Código</th>
@@ -1304,11 +1465,11 @@ export function App() {
 
           {/* 7. FINANCEIRO */}
           {activeModule === 'financeiro' && (
-            <div className="bg-white border border-[#e7eaec] rounded overflow-hidden">
+            <div className="bg-white border border-[#e7eaec] rounded overflow-x-auto">
               <div className="p-4 border-b border-[#e7eaec] font-semibold">
                 Movimentações Financeiras / Caixa
               </div>
-              <table className="w-full text-left border-collapse text-xs">
+              <table className="w-full min-w-[480px] text-left border-collapse text-xs">
                 <thead>
                   <tr className="bg-[#f5f5f6] border-b border-[#e7eaec] font-bold">
                     <th className="py-3 px-4">Data</th>
@@ -1325,7 +1486,9 @@ export function App() {
                       <td className="py-3 px-4">{f.forma_pagamento}</td>
                       <td
                         className={`py-3 px-4 text-right font-bold ${
-                          f.tipo === 'Entrada' ? 'text-[#1ab394]' : 'text-[#ed5565]'
+                          f.tipo === 'Entrada'
+                            ? 'text-[#1ab394]'
+                            : 'text-[#ed5565]'
                         }`}
                       >
                         R$ {f.valor.toFixed(2)}
@@ -1340,12 +1503,70 @@ export function App() {
           {/* 8. SUPABASE */}
           {activeModule === 'supabase' && (
             <SupabaseConfigView
-              onConfigChanged={() => setSupabaseConnected(getSupabaseConfig().isConfigured)}
+              onConfigChanged={() =>
+                setSupabaseConnected(getSupabaseConfig().isConfigured)
+              }
               onSyncLocalToSupabase={handleSyncLocalToSupabase}
             />
           )}
         </main>
       </div>
+
+      {/* =====================================================================
+          BARRA DE NAVEGAÇÃO INFERIOR PARA CELULAR (ESTILO APP NATIVO)
+         ===================================================================== */}
+      <nav className="fixed bottom-0 inset-x-0 z-30 bg-[#2f4050] text-[#a7b1c2] border-t border-[#23313f] flex items-center justify-around py-1.5 px-1 shadow-[0_-4px_12px_rgba(0,0,0,0.18)] lg:hidden">
+        <button
+          type="button"
+          onClick={() => navigateModule('os_editor')}
+          className={`flex flex-col items-center gap-0.5 px-2.5 py-1 rounded text-[10px] font-semibold cursor-pointer ${
+            activeModule === 'os_editor' ? 'text-[#1ab394]' : 'text-[#a7b1c2]'
+          }`}
+        >
+          <FileSpreadsheet className="w-4 h-4" />
+          <span>O.S. {currentEditingOS?.codigo_os}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => navigateModule('os_list')}
+          className={`flex flex-col items-center gap-0.5 px-2.5 py-1 rounded text-[10px] font-semibold cursor-pointer ${
+            activeModule === 'os_list' ? 'text-[#1ab394]' : 'text-[#a7b1c2]'
+          }`}
+        >
+          <Search className="w-4 h-4" />
+          <span>Buscar ({ordens.length})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={handleCreateNewOS}
+          className="flex flex-col items-center justify-center bg-[#1ab394] text-white px-3.5 py-1.5 rounded-full text-[10px] font-bold shadow-md -mt-3 border-2 border-[#2f4050] cursor-pointer"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Nova O.S.</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => navigateModule('pdv')}
+          className={`flex flex-col items-center gap-0.5 px-2.5 py-1 rounded text-[10px] font-semibold cursor-pointer ${
+            activeModule === 'pdv' ? 'text-[#1ab394]' : 'text-[#a7b1c2]'
+          }`}
+        >
+          <ShoppingBag className="w-4 h-4" />
+          <span>Vendas</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setSidebarOpen(true)}
+          className="flex flex-col items-center gap-0.5 px-2.5 py-1 rounded text-[10px] font-semibold text-[#a7b1c2] cursor-pointer"
+        >
+          <Menu className="w-4 h-4" />
+          <span>Menu</span>
+        </button>
+      </nav>
 
       {printingOS && (
         <PrintOSModal os={printingOS} onClose={() => setPrintingOS(null)} />
