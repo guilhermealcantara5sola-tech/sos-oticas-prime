@@ -195,9 +195,39 @@ export function App() {
   };
 
   useEffect(() => {
-    if (supabaseConnected) {
-      fetchFromSupabase();
-    }
+    if (!supabaseConnected) return;
+    fetchFromSupabase();
+
+    const client = getSupabaseClient();
+    if (!client) return;
+
+    const channel = client
+      .channel('sos-oticas-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'ordens_servico' },
+        () => fetchFromSupabase()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'clientes' },
+        () => fetchFromSupabase()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'produtos' },
+        () => fetchFromSupabase()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'financeiro' },
+        () => fetchFromSupabase()
+      )
+      .subscribe();
+
+    return () => {
+      client.removeChannel(channel);
+    };
   }, [supabaseConnected]);
 
   const handleSaveOS = async (updatedOS: OrdemServico) => {
@@ -209,34 +239,25 @@ export function App() {
       return [updatedOS, ...prev];
     });
 
+    let finRecord: LancamentoFinanceiro | null = null;
     if (updatedOS.valor_entrada > 0) {
+      const existingFin = financeiro.find((f) => f.os_id === updatedOS.id);
+      finRecord = {
+        id: existingFin ? existingFin.id : `fin-${Date.now()}`,
+        os_id: updatedOS.id,
+        descricao: `Entrada / Sinal O.S. #${updatedOS.numero_os} (${updatedOS.codigo_os}) - ${updatedOS.cliente_nome}`,
+        tipo: 'Entrada',
+        categoria: 'Sinal de O.S.',
+        forma_pagamento: updatedOS.forma_pagamento,
+        valor: updatedOS.valor_entrada,
+        status: 'Pago',
+        data_lancamento: updatedOS.data_abertura,
+      };
       setFinanceiro((prev) => {
-        const existingFin = prev.find((f) => f.os_id === updatedOS.id);
         if (existingFin) {
-          return prev.map((f) =>
-            f.os_id === updatedOS.id
-              ? {
-                  ...f,
-                  valor: updatedOS.valor_entrada,
-                  descricao: `Sinal/Pagamento O.S. #${updatedOS.numero_os} (${updatedOS.codigo_os}) - ${updatedOS.cliente_nome}`,
-                }
-              : f
-          );
+          return prev.map((f) => (f.os_id === updatedOS.id ? finRecord! : f));
         }
-        return [
-          {
-            id: `fin-${Date.now()}`,
-            os_id: updatedOS.id,
-            descricao: `Entrada / Sinal O.S. #${updatedOS.numero_os} (${updatedOS.codigo_os}) - ${updatedOS.cliente_nome}`,
-            tipo: 'Entrada',
-            categoria: 'Sinal de O.S.',
-            forma_pagamento: updatedOS.forma_pagamento,
-            valor: updatedOS.valor_entrada,
-            status: 'Pago',
-            data_lancamento: updatedOS.data_abertura,
-          },
-          ...prev,
-        ];
+        return [finRecord!, ...prev];
       });
     }
 
@@ -245,6 +266,11 @@ export function App() {
       await client
         .from('ordens_servico')
         .upsert(updatedOS, { onConflict: 'codigo_os' });
+      if (finRecord) {
+        await client
+          .from('financeiro')
+          .upsert(finRecord, { onConflict: 'id' });
+      }
     }
   };
 
@@ -361,92 +387,54 @@ export function App() {
     }
 
     try {
-      for (const o of ordens) {
-        const payload: Record<string, unknown> = {
-          codigo_os: o.codigo_os,
-          numero_os: o.numero_os,
-          cliente_nome: o.cliente_nome,
-          cliente_telefone: o.cliente_telefone,
-          cliente_cpf: o.cliente_cpf,
-          status: o.status,
-          vendedor: o.vendedor,
-          data_abertura: o.data_abertura,
-          data_previsao: o.data_previsao,
-          hora_previsao: o.hora_previsao,
-          medico_prescritor: o.medico_prescritor,
-          crm_medico: o.crm_medico,
-          data_receita: o.data_receita,
-          longe_od_esf: o.longe_od_esf,
-          longe_od_cil: o.longe_od_cil,
-          longe_od_eixo: o.longe_od_eixo,
-          longe_od_dnp: o.longe_od_dnp,
-          longe_od_altura: o.longe_od_altura,
-          longe_od_prisma: o.longe_od_prisma,
-          longe_oe_esf: o.longe_oe_esf,
-          longe_oe_cil: o.longe_oe_cil,
-          longe_oe_eixo: o.longe_oe_eixo,
-          longe_oe_dnp: o.longe_oe_dnp,
-          longe_oe_altura: o.longe_oe_altura,
-          longe_oe_prisma: o.longe_oe_prisma,
-          adicao_od: o.adicao_od,
-          adicao_oe: o.adicao_oe,
-          perto_od_esf: o.perto_od_esf,
-          perto_od_cil: o.perto_od_cil,
-          perto_od_eixo: o.perto_od_eixo,
-          perto_od_dnp: o.perto_od_dnp,
-          perto_oe_esf: o.perto_oe_esf,
-          perto_oe_cil: o.perto_oe_cil,
-          perto_oe_eixo: o.perto_oe_eixo,
-          perto_oe_dnp: o.perto_oe_dnp,
-          lente_tipo: o.lente_tipo,
-          lente_material: o.lente_material,
-          lente_descricao: o.lente_descricao,
-          lente_tratamentos: o.lente_tratamentos,
-          lente_origem: o.lente_origem,
-          armacao_procedencia: o.armacao_procedencia,
-          armacao_descricao: o.armacao_descricao,
-          armacao_referencia: o.armacao_referencia,
-          armacao_cor: o.armacao_cor,
-          armacao_tipo_montagem: o.armacao_tipo_montagem,
-          armacao_aro: o.armacao_aro,
-          armacao_ponte: o.armacao_ponte,
-          armacao_vertical: o.armacao_vertical,
-          armacao_diagonal: o.armacao_diagonal,
-          armacao_estado_conservacao: o.armacao_estado_conservacao,
-          laboratorio_nome: o.laboratorio_nome,
-          laboratorio_pedido: o.laboratorio_pedido,
-          laboratorio_data_envio: o.laboratorio_data_envio,
-          laboratorio_previsao_retorno: o.laboratorio_previsao_retorno,
-          observacoes_montagem: o.observacoes_montagem,
-          valor_lentes: o.valor_lentes,
-          valor_armacao: o.valor_armacao,
-          valor_servicos: o.valor_servicos,
-          valor_desconto: o.valor_desconto,
-          valor_total: o.valor_total,
-          valor_entrada: o.valor_entrada,
-          valor_restante: o.valor_restante,
-          forma_pagamento: o.forma_pagamento,
-          parcelas: o.parcelas,
-        };
-        const { error } = await client
-          .from('ordens_servico')
-          .upsert(payload, { onConflict: 'codigo_os' });
-        if (error) throw error;
+      // 1. Sincronizar Clientes
+      if (clientes.length > 0) {
+        const { error: cliErr } = await client
+          .from('clientes')
+          .upsert(clientes, { onConflict: 'id' });
+        if (cliErr) throw cliErr;
       }
+
+      // 2. Sincronizar Produtos / Estoque
+      if (produtos.length > 0) {
+        const { error: prodErr } = await client
+          .from('produtos')
+          .upsert(produtos, { onConflict: 'id' });
+        if (prodErr) throw prodErr;
+      }
+
+      // 3. Sincronizar Ordens de Serviço (Completa)
+      for (const o of ordens) {
+        const { historico, ...osPayload } = o;
+        void historico;
+        const { error: osErr } = await client
+          .from('ordens_servico')
+          .upsert(osPayload, { onConflict: 'codigo_os' });
+        if (osErr) throw osErr;
+      }
+
+      // 4. Sincronizar Financeiro / Caixa
+      if (financeiro.length > 0) {
+        const { error: finErr } = await client
+          .from('financeiro')
+          .upsert(financeiro, { onConflict: 'id' });
+        if (finErr) throw finErr;
+      }
+
       return {
         ok: true,
-        message: `${ordens.length} Ordens de Serviço (incluindo NNqxKG) gravadas no Supabase com sucesso!`,
+        message: `Tudo sincronizado no Supabase: ${ordens.length} Ordens de Serviço (incluindo NNqxKG), ${clientes.length} Clientes, ${produtos.length} Produtos e ${financeiro.length} Lançamentos de Caixa!`,
       };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Erro desconhecido';
       return {
         ok: false,
-        message: `Erro ao sincronizar: ${msg}. Execute primeiro o Script SQL no Supabase!`,
+        message: `Erro ao sincronizar: ${msg}. Copie e execute o Script SQL abaixo no SQL Editor do Supabase!`,
       };
     }
   };
 
-  const handleAddCliente = (e: React.FormEvent) => {
+  const handleAddCliente = async (e: React.FormEvent) => {
     e.preventDefault();
     const created: Cliente = {
       id: `c-${Date.now()}`,
@@ -465,9 +453,13 @@ export function App() {
       cidade: 'São Paulo - SP',
       observacoes: '',
     });
+    const client = getSupabaseClient();
+    if (client) {
+      await client.from('clientes').upsert(created, { onConflict: 'id' });
+    }
   };
 
-  const handleAddProduto = (e: React.FormEvent) => {
+  const handleAddProduto = async (e: React.FormEvent) => {
     e.preventDefault();
     const created: Produto = {
       id: `p-${Date.now()}`,
@@ -475,9 +467,13 @@ export function App() {
     };
     setProdutos([created, ...produtos]);
     setShowNewProdModal(false);
+    const client = getSupabaseClient();
+    if (client) {
+      await client.from('produtos').upsert(created, { onConflict: 'id' });
+    }
   };
 
-  const handleFinalizarPDV = () => {
+  const handleFinalizarPDV = async () => {
     if (pdvCart.length === 0) return;
     const subtotal = pdvCart.reduce(
       (acc, item) => acc + item.produto.preco_venda * item.qtd,
@@ -486,36 +482,40 @@ export function App() {
     const total = Math.max(0, subtotal - pdvDesconto);
     const today = new Date().toISOString().split('T')[0];
 
-    setFinanceiro([
-      {
-        id: `fin-${Date.now()}`,
-        os_id: null,
-        descricao: `Venda Balcão PDV (${pdvCart
-          .map((i) => i.produto.nome)
-          .join(', ')}) - ${pdvClienteNome}`,
-        tipo: 'Entrada',
-        categoria: 'Venda Direta PDV',
-        forma_pagamento: pdvFormaPagto,
-        valor: total,
-        status: 'Pago',
-        data_lancamento: today,
-      },
-      ...financeiro,
-    ]);
+    const novoLancamento: LancamentoFinanceiro = {
+      id: `fin-${Date.now()}`,
+      os_id: null,
+      descricao: `Venda Balcão PDV (${pdvCart
+        .map((i) => i.produto.nome)
+        .join(', ')}) - ${pdvClienteNome}`,
+      tipo: 'Entrada',
+      categoria: 'Venda Direta PDV',
+      forma_pagamento: pdvFormaPagto,
+      valor: total,
+      status: 'Pago',
+      data_lancamento: today,
+    };
 
-    setProdutos((prev) =>
-      prev.map((p) => {
-        const inCart = pdvCart.find((c) => c.produto.id === p.id);
-        return inCart
-          ? { ...p, estoque: Math.max(0, p.estoque - inCart.qtd) }
-          : p;
-      })
-    );
+    setFinanceiro([novoLancamento, ...financeiro]);
+
+    const updatedProdutos = produtos.map((p) => {
+      const inCart = pdvCart.find((c) => c.produto.id === p.id);
+      return inCart
+        ? { ...p, estoque: Math.max(0, p.estoque - inCart.qtd) }
+        : p;
+    });
+    setProdutos(updatedProdutos);
 
     setPdvCart([]);
     setPdvDesconto(0);
     setPdvSuccess(true);
     setTimeout(() => setPdvSuccess(false), 3500);
+
+    const client = getSupabaseClient();
+    if (client) {
+      await client.from('financeiro').upsert(novoLancamento, { onConflict: 'id' });
+      await client.from('produtos').upsert(updatedProdutos, { onConflict: 'id' });
+    }
   };
 
   const currentEditingOS =
